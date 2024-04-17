@@ -9,7 +9,7 @@ rois_of_interest = {"face", ...
     "left_nonsocial_object", ...
     "right_nonsocial_object"};
 for i = 1:numel(mat_files)
-    fprintf("File: %d/%d\n", i, numel(mat_files));
+    try
     f_name = mat_files(i).name;
     roi_struct = load(fullfile(dir_path, f_name));
     roi_struct = roi_struct.var;
@@ -23,7 +23,10 @@ for i = 1:numel(mat_files)
         m2_rois = roi_struct.m2.rects;
         m2_roi_rects = extractROIFields(m2_rois, rois_of_interest);
         roi_rects.m2 = m2_roi_rects;
-        save(out_f_path, 'roi_rects');
+        % Update progress bar
+        %progress = i / numel(mat_files) * 100;
+        %fprintf(repmat('\b', 1, 5));  % Erase previous percentage
+        %fprintf('%3.0f%%', progress);
     catch ME
         % If an error occurs, display the error message and continue to the next iteration
         fprintf('\nError processing file "%s": %s\n', f_name, ME.message);
@@ -48,23 +51,25 @@ function ensurePathExists(out_path)
     end
 end
 
-function roiCell = extractROIFields(roi_rect_map, rois_of_interest)
-    % Initialize empty cell array to store field names and values
-    roiCell = cell(numel(rois_of_interest), 2);
+
+function roiTable = extractROIFields(roi_rect_map, rois_of_interest)
+    % Initialize empty cell arrays to store field names and values
+    fieldNames = {};
+    fieldValues = {};
     % Iterate over each ROI of interest
     for i = 1:numel(rois_of_interest)
         roi = rois_of_interest{i};
         % Check if the ROI exists in the struct
         if ismember(roi, roi_rect_map.keys())
-            % If the field exists, add its name and value to roiCell
-            roiCell{i, 1} = roi; % Name
-            roiCell{i, 2} = roi_rect_map(roi); % Value
+            % If the field exists, add its name to fieldNames
+            fieldNames = [fieldNames; roi];
+            % Get the value of the field and add it to fieldValues
+            fieldValue = roi_rect_map(roi);
+            fieldValues = [fieldValues; {fieldValue}];
         else
             warning('ROI "%s" not found in the struct.', roi);
-            % Fill empty cell entries with NaN or any other placeholder
-            roiCell{i, 1} = roi; % Name
-            roiCell{i, 2} = NaN; % Placeholder value
         end
     end 
+    % Create a table from fieldNames and fieldValues
+    roiTable = table(fieldNames, fieldValues);
 end
-

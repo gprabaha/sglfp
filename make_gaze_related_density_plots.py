@@ -11,6 +11,7 @@ import numpy as np
 import pdb
 import scipy.io
 import matplotlib.pyplot as plt
+import matplotlib.patches as patches
 from datetime import datetime
 from tqdm import tqdm
 
@@ -44,7 +45,14 @@ def extract_pos_time(loaded_pos_file, loaded_time_file, loaded_rect_file):
     m1_pos = loaded_pos_file['aligned_position_file']['m1'][0][0]
     m2_pos = loaded_pos_file['aligned_position_file']['m2'][0][0]
     time_vec = loaded_time_file['time_file']['t'][0][0]
-    rects = loaded_rect_file['var']['m1'][0][0]['rects']
+    rects_mat = loaded_rect_file['roi_rects'][0][0]['m1']
+    rects_m1 = [];
+    for i in range(len(rects_mat)):
+        rects_m1.append(rects_mat[i][1].squeeze())
+    rects_mat = loaded_rect_file['roi_rects'][0][0]['m2']
+    rects_m2 = [];
+    for i in range(len(rects_mat)):
+        rects_m2.append(rects_mat[i][1].squeeze())
     # pdb.set_trace()
     # Remove NaN values from time_vec and corresponding columns in m1_pos and m2_pos
     time_vec_cleaned = time_vec[~np.isnan(time_vec)]
@@ -57,10 +65,10 @@ def extract_pos_time(loaded_pos_file, loaded_time_file, loaded_rect_file):
     m1_pos_cleaned = m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
     m2_pos_cleaned = m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
     time_vec_cleaned = time_vec_cleaned[valid_indices_m1 & valid_indices_m2]
-    return m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned
+    return m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, rects_m1, rects_m2
 
 
-def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, session, run_number, pos_file, plot_root, plot_dir_name):
+def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, rects_m1, rects_m2, session, run_number, pos_file, plot_root, plot_dir_name):
     # Create 2D histogram for m1
     heatmap_m1, xedges_m1, yedges_m1 = \
         np.histogram2d(m1_pos_cleaned[0], m1_pos_cleaned[1], bins=100)
@@ -72,10 +80,7 @@ def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, session, run_num
     # Plot heatmap for m1
     img1 = axs[0].imshow( 
         heatmap_m1.T,
-        extent=[xedges_m1[0],
-                xedges_m1[-1],
-                yedges_m1[0],
-                yedges_m1[-1]],
+        extent=[xedges_m1[0], xedges_m1[-1], yedges_m1[0], yedges_m1[-1]],
         origin='lower')
     axs[0].set_title('m1_pos_cleaned')
     axs[0].set_xlabel('X')
@@ -83,13 +88,17 @@ def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, session, run_num
     axs[0].grid(False)
     axs[0].set_aspect('equal')
     axs[0].invert_yaxis()  # Invert y-axis direction
+    # Plot rectangles for m1
+    for rect in rects_m1:
+        x1, y1, x2, y2 = rect
+        width = x2 - x1
+        height = y2 - y1
+        rect_patch = patches.Rectangle((x1, y1), width, height, edgecolor='r', facecolor='none')
+        axs[0].add_patch(rect_patch)
     # Plot heatmap for m2
     img2 = axs[1].imshow(
         heatmap_m2.T,
-        extent=[xedges_m2[0],
-                xedges_m2[-1],
-                yedges_m2[0],
-                yedges_m2[-1]],
+        extent=[xedges_m2[0], xedges_m2[-1], yedges_m2[0], yedges_m2[-1]],
         origin='lower')
     axs[1].set_title('m2_pos_cleaned')
     axs[1].set_xlabel('X')
@@ -97,6 +106,13 @@ def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, session, run_num
     axs[1].grid(False)
     axs[1].set_aspect('equal')
     axs[1].invert_yaxis()  # Invert y-axis direction
+    # Plot rectangles for m2
+    for rect in rects_m2:
+        x1, y1, x2, y2 = rect
+        width = x2 - x1
+        height = y2 - y1
+        rect_patch = patches.Rectangle((x1, y1), width, height, edgecolor='r', facecolor='none')
+        axs[1].add_patch(rect_patch)
     # Set super-title
     super_title = f"Session: {session.strftime('%Y-%m-%d')} - Run: {run_number}"
     fig.suptitle(super_title, fontsize=14)
@@ -115,7 +131,7 @@ def plot_and_save_gaze_heatmaps(m1_pos_cleaned, m2_pos_cleaned, session, run_num
 
 behav_root = "/gpfs/milgram/project/chang/pg496/data_dir/social_gaze/social_gaze_eyetracking"
 pos_subfolder_path = 'aligned_raw_samples/position'
-roi_bounds_subfolder_path = 'rois'
+roi_rects_subfolder_path = 'roi_rect_tables'
 time_subfolder_path = 'aligned_raw_samples/time'
 pupil_subfolder_path = 'pupil_size'
 plot_root = "/gpfs/milgram/project/chang/pg496/data_dir/social_gaze/plots"
@@ -123,7 +139,7 @@ plot_dir_name = "gaze_loc_heatmaps"
 
 sorted_time_files = list_mat_files_sorted(behav_root, time_subfolder_path)
 sorted_pos_files = list_mat_files_sorted(behav_root, pos_subfolder_path)
-sorted_rect_files = list_mat_files_sorted(behav_root, roi_bounds_subfolder_path)
+sorted_rect_files = list_mat_files_sorted(behav_root, roi_rects_subfolder_path)
 sorted_rect_files = [file for file in sorted_rect_files if os.path.basename(file) in [os.path.basename(file) for file in sorted_time_files]]
 sorted_pupil_files = list_mat_files_sorted(behav_root, pupil_subfolder_path)
 assert [os.path.basename(file) for file in sorted_time_files] == [os.path.basename(file) for file in sorted_pos_files]
@@ -138,10 +154,10 @@ for pos_file, time_file, rect_file in \
     session = extract_session_date(pos_file)
     run_number = extract_run_number(pos_file)
     try:
-        m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned = \
+        m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, rects_m1, rects_m2 = \
             extract_pos_time(loaded_pos_file, loaded_time_file, loaded_rect_file)
         plot_and_save_gaze_heatmaps(
-            m1_pos_cleaned, m2_pos_cleaned, session, run_number,
+            m1_pos_cleaned, m2_pos_cleaned, rects_m1, rects_m2, session, run_number,
             pos_file, plot_root, plot_dir_name)
     except:
         continue
