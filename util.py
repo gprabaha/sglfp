@@ -7,7 +7,7 @@ Created on Thu Apr 18 13:46:08 2024
 """
 
 import os
-import datetime
+from datetime import datetime
 
 def extract_session_date(filepath):
     filename = os.path.basename(filepath)
