@@ -6,34 +6,91 @@ Created on Thu Apr 18 13:47:30 2024
 @author: pg496
 """
 
+import os
 import numpy as np
-import pdb
+import util
+
+
+def match_with_time_files(sorted_rect_files, sorted_time_files):
+    """
+    Filter rectangle files matching time files by basename.
+    Args:
+    - sorted_rect_files (list): Sorted rectangle file paths.
+    - sorted_time_files (list): Sorted time file paths.
+    Returns:
+    - filtered_files (list): Filtered rectangle file paths.
+    """
+    filtered_files = [file for file in sorted_rect_files
+                      if os.path.basename(file) in [os.path.basename(f)
+                                                    for f in sorted_time_files]]
+    return filtered_files
+
+
+def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
+                              pupil_subfolder, roi_rects_subfolder):
+    """
+    Sort and match gaze files from subfolders.
+    Args:
+    - behav_root (str): Root directory of behavioral data.
+    - time_subfolder (str): Subfolder containing time files.
+    - pos_subfolder (str): Subfolder containing position files.
+    - pupil_subfolder (str): Subfolder containing pupil files.
+    - roi_rects_subfolder (str): Subfolder containing ROI rects files.
+    Returns:
+    - sorted_time_files (list): Sorted time file paths.
+    - sorted_pos_files (list): Sorted position file paths.
+    - sorted_pupil_files (list): Sorted pupil file paths.
+    - sorted_rect_files (list): Sorted ROI rects file paths.
+    """
+    sorted_time_files = util.list_mat_files_sorted(behav_root, time_subfolder)
+    sorted_pos_files = util.list_mat_files_sorted(behav_root, pos_subfolder)
+    sorted_pupil_files = util.list_mat_files_sorted(behav_root, pupil_subfolder)
+    sorted_rect_files = util.list_mat_files_sorted(behav_root, roi_rects_subfolder)
+    sorted_rect_files = match_with_time_files(sorted_rect_files, sorted_time_files)
+    # Assert basenames equality
+    assert [os.path.basename(f) for f in sorted_time_files] == \
+           [os.path.basename(f) for f in sorted_pos_files] == \
+           [os.path.basename(f) for f in sorted_rect_files] == \
+           [os.path.basename(f) for f in sorted_pupil_files]
+    return sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files
 
 
 def extract_pos_time(loaded_pos_file, loaded_time_file,
                      loaded_rect_file, loaded_pupil_file):
+    """
+    Extract position, time, pupil, and ROI rects data.
+    Args:
+    - loaded_pos_file: Loaded position file.
+    - loaded_time_file: Loaded time file.
+    - loaded_rect_file: Loaded ROI rects file.
+    - loaded_pupil_file: Loaded pupil file.
+    Returns:
+    - m1_pos_cleaned (numpy.ndarray): Cleaned position data for m1.
+    - m2_pos_cleaned (numpy.ndarray): Cleaned position data for m2.
+    - time_vec_cleaned (numpy.ndarray): Cleaned time vector.
+    - m1_pupil_cleaned (numpy.ndarray): Cleaned pupil data for m1.
+    - m2_pupil_cleaned (numpy.ndarray): Cleaned pupil data for m2.
+    - rects_m1 (list): ROI rects for m1.
+    - rects_m2 (list): ROI rects for m2.
+    """
     m1_pos = loaded_pos_file['aligned_position_file']['m1'][0][0]
     m2_pos = loaded_pos_file['aligned_position_file']['m2'][0][0]
     time_vec = loaded_time_file['time_file']['t'][0][0]
     rects_mat_m1 = loaded_rect_file['roi_rects'][0][0]['m1']
     m1_pupil = loaded_pupil_file['var'][0][0]['m1'][0]
     m2_pupil = loaded_pupil_file['var'][0][0]['m2'][0]
-    rects_m1 = [];
-    for i in range(len(rects_mat_m1)):
-        rects_m1.append(rects_mat_m1[i][1].squeeze())
+    # Extract ROI rects
+    rects_m1 = [rects_mat_m1[i][1].squeeze() for i in range(len(rects_mat_m1))]
     rects_mat_m2 = loaded_rect_file['roi_rects'][0][0]['m2']
-    rects_m2 = [];
-    for i in range(len(rects_mat_m2)):
-        rects_m2.append(rects_mat_m2[i][1].squeeze())
-    # Remove NaN values from time_vec and corresponding columns in m1_pos and m2_pos
+    rects_m2 = [rects_mat_m2[i][1].squeeze() for i in range(len(rects_mat_m2))]
+    # Remove NaN values
     time_vec_cleaned = time_vec[~np.isnan(time_vec).squeeze()]
     m1_pos_cleaned = m1_pos[:, ~np.isnan(time_vec.T)[0]]
     m2_pos_cleaned = m2_pos[:, ~np.isnan(time_vec.T)[0]]
     m1_pupil_cleaned = m1_pupil[~np.isnan(time_vec).squeeze()]
     m2_pupil_cleaned = m2_pupil[~np.isnan(time_vec).squeeze()]
-    # Remove NaN values from m1_pos_cleaned
+    # Remove NaN values from position data
     valid_indices_m1 = ~np.isnan(m1_pos_cleaned).any(axis=0)
-    # Remove NaN values from m2_pos_cleaned
     valid_indices_m2 = ~np.isnan(m2_pos_cleaned).any(axis=0)
     m1_pos_cleaned = m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
     m2_pos_cleaned = m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
@@ -41,10 +98,23 @@ def extract_pos_time(loaded_pos_file, loaded_time_file,
     m2_pupil_cleaned = m2_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
     time_vec_cleaned = time_vec_cleaned[valid_indices_m1 & valid_indices_m2]
     return m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, \
-        m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2
+           m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2
 
 
 def calculate_gaze_avg_pupil_size(pos_x, pos_y, pupil, bins):
+    """
+    Calculate average pupil size based on position.
+    Args:
+    - pos_x (numpy.ndarray): x-coordinates of gaze positions.
+    - pos_y (numpy.ndarray): y-coordinates of gaze positions.
+    - pupil (numpy.ndarray): Pupil size data.
+    - bins (int or sequence of scalars): Bins for histogram.
+    Returns:
+    - heatmap (numpy.ndarray): Heatmap of gaze positions.
+    - avg_pupil (numpy.ndarray): Average pupil size based on position.
+    - xedges (numpy.ndarray): Bin edges along the x-axis.
+    - yedges (numpy.ndarray): Bin edges along the y-axis.
+    """
     heatmap, xedges, yedges = np.histogram2d(pos_x, pos_y, bins=bins)
     avg_pupil = np.zeros_like(heatmap)
     for i in range(len(xedges) - 1):
