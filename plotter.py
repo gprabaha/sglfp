@@ -13,7 +13,6 @@ import scipy
 import util
 import proc_behav
 
-
 def plot_roi_rects(ax, rects, color='r'):
     """
     Plot rectangles on the given axis.
@@ -117,6 +116,7 @@ def plot_mean_pupil_size_distribution(
     plt.savefig(os.path.join(save_dir, plot_name))
     plt.close(fig)  # Close the figure to release memory
 
+<<<<<<< HEAD
 
 def plot_pupil_dustribution_for_one_file(args):
     """
@@ -148,3 +148,5 @@ def plot_pupil_dustribution_for_one_file(args):
         pass
 
 
+=======
+>>>>>>> ffbc7f20a8ded83fe284348d1b4c38c5e3c865f5
