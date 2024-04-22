@@ -15,13 +15,13 @@ for i = 1:numel(mat_files)
     roi_struct = roi_struct.var;
     m1_rois = roi_struct.m1.rects;
     roi_rects = struct();
-    m1_roi_rects = extractROIFields(m1_rois, rois_of_interest);
+    m1_roi_rects = convert_roi_map_to_struct(m1_rois, rois_of_interest);
     roi_rects.m1 = m1_roi_rects;
     out_f_path = fullfile(out_path, f_name);
     save(out_f_path, 'roi_rects');
     try
         m2_rois = roi_struct.m2.rects;
-        m2_roi_rects = extractROIFields(m2_rois, rois_of_interest);
+        m2_roi_rects = convert_roi_map_to_struct(m2_rois, rois_of_interest);
         roi_rects.m2 = m2_roi_rects;
         save(out_f_path, 'roi_rects');
     catch ME
@@ -48,23 +48,22 @@ function ensurePathExists(out_path)
     end
 end
 
-function roiCell = extractROIFields(roi_rect_map, rois_of_interest)
-    % Initialize empty cell array to store field names and values
-    roiCell = cell(numel(rois_of_interest), 2);
+function roiStruct = convert_roi_map_to_struct(roi_rect_map, rois_of_interest)
+    % Initialize empty struct to store fields and values
+    roiStruct = struct();
     % Iterate over each ROI of interest
     for i = 1:numel(rois_of_interest)
         roi = rois_of_interest{i};
         % Check if the ROI exists in the struct
         if ismember(roi, roi_rect_map.keys())
-            % If the field exists, add its name and value to roiCell
-            roiCell{i, 1} = roi; % Name
-            roiCell{i, 2} = roi_rect_map(roi); % Value
+            % If the field exists, add it to roiStruct
+            roiStruct.(roi) = roi_rect_map(roi);
         else
             warning('ROI "%s" not found in the struct.', roi);
-            % Fill empty cell entries with NaN or any other placeholder
-            roiCell{i, 1} = roi; % Name
-            roiCell{i, 2} = NaN; % Placeholder value
+            % Fill missing fields with NaN or any other placeholder
+            roiStruct.(roi) = NaN;
         end
     end 
 end
+
 
