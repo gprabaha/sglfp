@@ -44,24 +44,53 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
 
 
 def use_roi_to_create_frame_and_crop_pos_time(args):
+    """
+    Use regions of interest (ROIs) to create frames and crop position-time data accordingly.
+    Args:
+    - args (tuple): A tuple containing the following elements in order:
+        - m1_pos_cleaned (list): Cleaned position data for M1.
+        - m2_pos_cleaned (list): Cleaned position data for M2.
+        - time_vec_cleaned (list): Cleaned time vector.
+        - m1_pupil_cleaned (list): Cleaned pupil data for M1.
+        - m2_pupil_cleaned (list): Cleaned pupil data for M2.
+        - rects_m1 (numpy.ndarray): Detected rectangles for M1.
+        - rects_m2 (numpy.ndarray): Detected rectangles for M2.
+        - stretch_factor (float): Stretch factor for frame adjustment.
+    Returns:
+    - tuple: A tuple containing the following elements in order:
+        - m1_pos_within_frame (np.array): Position data for M1 within M1 frame.
+        - m1_time_within_frame (np.array): Time vector for M1 within M1 frame.
+        - m1_pupil_within_frame (np.array): Pupil data for M1 within M1 frame.
+        - rects_m1 (numpy.ndarray): Detected rectangles for M1.
+        - m1_rois (list): List of regions of interest for M1.
+        - m2_pos_within_frame (np.array): Position data for M2 within M2 frame.
+        - m2_time_within_frame (np.array): Time vector for M2 within M2 frame.
+        - m2_pupil_within_frame (np.array): Pupil data for M2 within M2 frame.
+        - rects_m2 (numpy.ndarray): Detected rectangles for M2.
+        - m2_rois (list): List of regions of interest for M2.
+    """
+    # Unpack input arguments
     m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
         m2_pupil_cleaned, rects_m1, rects_m2, stretch_factor = args
+    # Get regions of interest for M1 and M2
     m1_rois = rects_m1.dtype.names
     m2_rois = rects_m2.dtype.names
+    # Get frame and scaling information for M1
     m1_frame, m1_scale = util.get_frame_rect_and_scales_for_m1(
         rects_m1, m1_rois, stretch_factor)
+    # Get frame for M2 using M1 scaling
     m2_frame = util.get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor)
-    # Filter m1_pos_cleaned within m1_frame
+    # Filter M1 position data within M1 frame
     m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
         util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
                                            m1_pupil_cleaned, m1_frame)
-    # Filter m2_pos_cleaned within m2_frame
+    # Filter M2 position data within M2 frame
     m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame = \
         util.filter_positions_within_frame(m2_pos_cleaned, time_vec_cleaned,
                                            m2_pupil_cleaned, m2_frame)
+    # Return the cropped data and relevant information
     return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois,
             m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois)
-
 
 
 def remove_nans_in_pos_time(loaded_pos_file, loaded_time_file,

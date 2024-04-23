@@ -15,8 +15,22 @@ import numpy as np
 import pdb
 
 def filter_positions_within_frame(positions, time, pupil, frame):
+    """
+    Filter positions, time, and pupil data within a specified frame.
+
+    Args:
+    - positions (list): List of (x, y) positions.
+    - time (list): List of corresponding timestamps.
+    - pupil (list): List of corresponding pupil data.
+    - frame (list): List containing frame coordinates [x1, y1, x2, y2].
+
+    Returns:
+    - pos_within_frame (np.array): NumPy array of filtered positions.
+    - time_vec (np.array): NumPy array of filtered timestamps.
+    - pupil (np.array): NumPy array of filtered pupil data.
+    """
     x1, y1, x2, y2 = frame
-    filtered_data = [(pos, t, p) for pos, t, p in zip(positions, time, pupil) \
+    filtered_data = [(pos, t, p) for pos, t, p in zip(positions, time, pupil)
                      if x1 <= pos[0] <= x2 and y1 <= pos[1] <= y2]
     # Unzip the filtered data
     pos_within_frame, time_vec, pupil = zip(*filtered_data)
@@ -28,15 +42,34 @@ def filter_positions_within_frame(positions, time, pupil, frame):
 
 
 def find_center(rect):
-    # Unpack the rectangle coordinates
+    """
+    Find the center point of a rectangle.
+
+    Args:
+    - rect (list): List containing rectangle coordinates [x1, y1, x2, y2].
+
+    Returns:
+    - center (list): List containing the center coordinates [x_center, y_center].
+    """
     x1, y1, x2, y2 = rect
-    # Calculate the center point
     x_center = (x1 + x2) / 2
     y_center = (y1 + y2) / 2
     return [x_center, y_center]
 
 
 def get_frame_rect_and_scales_for_m1(rects_m1, m1_rois, stretch_factor):
+    """
+    Get frame rectangle and scales for M1 based on object boundaries.
+
+    Args:
+    - rects_m1 (dict): Dictionary containing M1 rectangle data.
+    - m1_rois (list): List of regions of interest for M1.
+    - stretch_factor (float): Scaling factor.
+
+    Returns:
+    - frame_rect (list): List containing frame rectangle coordinates [x_left, y_top, x_right, y_bottom].
+    - scales (list): List containing scaling factors [x_scale, y_scale].
+    """
     if ('left_nonsocial_object' in m1_rois) and ('right_nonsocial_object' in m1_rois) and ('face' in m1_rois):
         l_obj_rect = rects_m1['left_nonsocial_object'][0][0]
         r_obj_rect = rects_m1['right_nonsocial_object'][0][0]
@@ -57,6 +90,18 @@ def get_frame_rect_and_scales_for_m1(rects_m1, m1_rois, stretch_factor):
     
 
 def get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor):
+    """
+    Get frame rectangle for M2 based on M1's scale.
+
+    Args:
+    - rects_m2 (dict): Dictionary containing M2 rectangle data.
+    - m2_rois (list): List of regions of interest for M2.
+    - m1_scale (list): List containing scaling factors from M1 [x_scale, y_scale].
+    - stretch_factor (float): Scaling factor.
+
+    Returns:
+    - frame_rect (list): List containing frame rectangle coordinates [x_left, y_top, x_right, y_bottom].
+    """
     if 'face' in m2_rois:
         face_rect = rects_m2['face'][0][0]
         face_center = find_center(face_rect)
@@ -68,6 +113,7 @@ def get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor):
         return frame_rect
     else:
         return None
+
 
 
 def match_with_time_files(sorted_rect_files, sorted_time_files):
