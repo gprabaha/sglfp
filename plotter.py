@@ -15,113 +15,76 @@ import proc_behav
 
 import pdb
 
-def plot_roi_rects(ax, rects, color='r'):
+def plot_roi_rects(ax, rects, roi):
     """
     Plot rectangles on the given axis.
     Args:
     - ax (matplotlib.axes.Axes): The axis object to plot on.
-    - rects (list): List of rectangles, each defined by (x1, y1, x2, y2).
-    - color (str): Color of the rectangles. Default is 'r' (red).
+    - rects (dict): Dictionary of rectangles, each defined by (x1, y1, x2, y2).
+    - roi (list): List of strings indicating the ROI names.
     Returns:
     - None
     """
-    
-    # This has to be changed to adapt to the updated struct input
-    
-    for rect in rects:
+    default_colors = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
+    for i, roi_name in enumerate(roi):
+        rect = rects[roi_name][0][0]
         x1, y1, x2, y2 = rect
         width = x2 - x1
         height = y2 - y1
+        color = default_colors[i % len(default_colors)]  # Use modulo to cycle through default colors
         rect_patch = patches.Rectangle(
-            (x1, y1), width, height, edgecolor=color, facecolor='none')
+            (x1, y1), width, height, edgecolor=color, facecolor='none', label=roi_name)
         ax.add_patch(rect_patch)
 
+def plot_gaze_density(ax, heatmap, xedges, yedges, title):
+    ax.imshow(heatmap.T, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], origin='lower')
+    ax.set_title(title)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.grid(False)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()  # Invert y-axis direction
 
-def plot_mean_pupil_size_distribution(
-        m1_pos_cleaned, m2_pos_cleaned, rects_m1, rects_m2,
-        m1_pupil_cleaned, m2_pupil_cleaned, session, run_number,
-        pos_file, plot_root, plot_dir_name):
-    """
-    Plot mean pupil size distribution.
-    Args:
-    - m1_pos_cleaned (numpy.ndarray): Cleaned position data for m1.
-    - m2_pos_cleaned (numpy.ndarray): Cleaned position data for m2.
-    - rects_m1 (list): ROI rects for m1.
-    - rects_m2 (list): ROI rects for m2.
-    - m1_pupil_cleaned (numpy.ndarray): Cleaned pupil data for m1.
-    - m2_pupil_cleaned (numpy.ndarray): Cleaned pupil data for m2.
-    - session (datetime.datetime): Session date.
-    - run_number (int): Run number.
-    - pos_file (str): Path of the position file.
-    - plot_root (str): Root directory for saving plots.
-    - plot_dir_name (str): Name of the plot directory.
-    Returns:
-    - None
-    """
-    
-    # 1. write a function to prune x and y pos based on roi. in the function
-    # consider the fact that ROIs of M1 and M2 are different
-    
-    # 2. make gaze density plots
-    
-    # 3. make fixation density plots
-    
-    # 4. make saccade start and stop plots (think about how exactly)
-    
-    bins = 100
+def plot_average_pupil(ax, avg_pupil, xedges, yedges, title):
+    ax.imshow(avg_pupil.T, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], origin='lower')
+    ax.set_title(title)
+    ax.set_xlabel('X')
+    ax.set_ylabel('Y')
+    ax.grid(False)
+    ax.set_aspect('equal')
+    ax.invert_yaxis()  # Invert y-axis direction
+
+def plot_mean_pupil_size_distribution(pruned_files, session, run_number,
+                                      pos_file, plot_root, plot_dir_name, n_bins):
+    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois, \
+    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois = pruned_files
+    bins = n_bins
     # Calculate average pupil for m1
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m1_pos_cleaned[0], m1_pos_cleaned[1], m1_pupil_cleaned, bins)
+            m1_pos_within_frame[:,0], m1_pos_within_frame[:,1], m1_pupil_within_frame, bins)
     # Calculate average pupil for m2
     heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m2_pos_cleaned[0], m2_pos_cleaned[1], m2_pupil_cleaned, bins)
+            m2_pos_within_frame[:,0], m2_pos_within_frame[:,1], m2_pupil_within_frame, bins)
     # Plot subplots
     fig, axs = plt.subplots(2, 2, figsize=(12, 12))
-    # Plot heatmap for m1
-    axs[0, 0].imshow(heatmap_m1.T, extent=[xedges_m1[0], xedges_m1[-1], yedges_m1[0], yedges_m1[-1]], origin='lower')
-    axs[0, 0].set_title('m1 Gaze Density')
-    axs[0, 0].set_xlabel('X')
-    axs[0, 0].set_ylabel('Y')
-    axs[0, 0].grid(False)
-    axs[0, 0].set_aspect('equal')
-    axs[0, 0].invert_yaxis()  # Invert y-axis direction
-    # Plot ROIs for m1
-    plot_roi_rects(axs[0, 0], rects_m1)
-    # Plot heatmap for m2
-    axs[0, 1].imshow(heatmap_m2.T, extent=[xedges_m2[0], xedges_m2[-1], yedges_m2[0], yedges_m2[-1]], origin='lower')
-    axs[0, 1].set_title('m2 Gaze Density')
-    axs[0, 1].set_xlabel('X')
-    axs[0, 1].set_ylabel('Y')
-    axs[0, 1].grid(False)
-    axs[0, 1].set_aspect('equal')
-    axs[0, 1].invert_yaxis()  # Invert y-axis direction
-    # Plot ROIs for m2
-    plot_roi_rects(axs[0, 1], rects_m2)
-    # Plot average pupil for m1
-    axs[1, 0].imshow(avg_pupil_m1.T, extent=[xedges_m1[0], xedges_m1[-1], yedges_m1[0], yedges_m1[-1]], origin='lower')
-    axs[1, 0].set_title('m1 Average Pupil Size')
-    axs[1, 0].set_xlabel('X')
-    axs[1, 0].set_ylabel('Y')
-    axs[1, 0].grid(False)
-    axs[1, 0].set_aspect('equal')
-    axs[1, 0].invert_yaxis()  # Invert y-axis direction
-    # Plot ROIs for m1
-    plot_roi_rects(axs[1, 0], rects_m1)
-    # Plot average pupil for m2
-    axs[1, 1].imshow(avg_pupil_m2.T, extent=[xedges_m2[0], xedges_m2[-1], yedges_m2[0], yedges_m2[-1]], origin='lower')
-    axs[1, 1].set_title('m2 Average Pupil Size')
-    axs[1, 1].set_xlabel('X')
-    axs[1, 1].set_ylabel('Y')
-    axs[1, 1].grid(False)
-    axs[1, 1].set_aspect('equal')
-    axs[1, 1].invert_yaxis()  # Invert y-axis direction
-    # Plot ROIs for m2
-    plot_roi_rects(axs[1, 1], rects_m2)
+    # Plot m1 gaze density
+    plot_gaze_density(axs[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
+    plot_roi_rects(axs[0, 0], rects_m1, m1_rois)
+    # Plot m2 gaze density
+    plot_gaze_density(axs[0, 1], heatmap_m2, xedges_m2, yedges_m2, 'm2 Gaze Density')
+    plot_roi_rects(axs[0, 1], rects_m2, m2_rois)
+    # Plot m1 average pupil size
+    plot_average_pupil(axs[1, 0], avg_pupil_m1, xedges_m1, yedges_m1, 'm1 Average Pupil Size')
+    plot_roi_rects(axs[1, 0], rects_m1, m1_rois)
+    # Plot m2 average pupil size
+    plot_average_pupil(axs[1, 1], avg_pupil_m2, xedges_m2, yedges_m2, 'm2 Average Pupil Size')
+    plot_roi_rects(axs[1, 1], rects_m2, m2_rois)
     # Set super-title
     super_title = f"Session: {session.strftime('%Y-%m-%d')} - Run: {run_number}"
     fig.suptitle(super_title, fontsize=14)
+    
     # Save plot
     plot_name = os.path.basename(pos_file).replace('.mat', '.png')
     session_folder = session.strftime('%Y-%m-%d')
@@ -140,29 +103,23 @@ def plot_pupil_dustribution_for_one_file(args):
     Returns:
     - None
     """
-    pos_file, time_file, rect_file, pupil_file, plot_root, plot_dir_name = args
+    pos_file, time_file, rect_file, pupil_file, plot_root, plot_dir_name, stretch_factor, n_bins = args
     loaded_pos_file = scipy.io.loadmat(pos_file)
     loaded_time_file = scipy.io.loadmat(time_file)
     loaded_rect_file = scipy.io.loadmat(rect_file)
     loaded_pupil_file = scipy.io.loadmat(pupil_file)
     session = util.extract_session_date(pos_file)
     run_number = util.extract_run_number(pos_file)
-    
-    pdb.set_trace()
-    
     try:
-        m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, \
-            m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2 = \
-                proc_behav.extract_pos_time(
-                    loaded_pos_file, loaded_time_file,
-                    loaded_rect_file, loaded_pupil_file)
-        
-        
-        
-        plot_mean_pupil_size_distribution(
-            m1_pos_cleaned, m2_pos_cleaned, rects_m1, rects_m2,
-            m1_pupil_cleaned, m2_pupil_cleaned, session, run_number,
-            pos_file, plot_root, plot_dir_name)
+        nan_removed_files = proc_behav.remove_nans_in_pos_time(
+            loaded_pos_file, loaded_time_file, loaded_rect_file, loaded_pupil_file)
+        m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
+            m2_pupil_cleaned, rects_m1, rects_m2 = nan_removed_files
+        plot_params_tuple = nan_removed_files + (stretch_factor, )
+        pruned_files = proc_behav.use_roi_to_create_frame_and_crop_pos_time(
+            plot_params_tuple)
+        plot_mean_pupil_size_distribution(pruned_files, session, run_number,
+                                          pos_file, plot_root, plot_dir_name, n_bins)
     except:
         # Do nothing if there's an error
         pass

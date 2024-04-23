@@ -8,22 +8,10 @@ Created on Thu Apr 18 13:47:30 2024
 
 import os
 import numpy as np
+
 import util
 
-
-def match_with_time_files(sorted_rect_files, sorted_time_files):
-    """
-    Filter rectangle files matching time files by basename.
-    Args:
-    - sorted_rect_files (list): Sorted rectangle file paths.
-    - sorted_time_files (list): Sorted time file paths.
-    Returns:
-    - filtered_files (list): Filtered rectangle file paths.
-    """
-    filtered_files = [file for file in sorted_rect_files
-                      if os.path.basename(file) in [os.path.basename(f)
-                                                    for f in sorted_time_files]]
-    return filtered_files
+import pdb
 
 
 def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
@@ -46,7 +34,7 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
     sorted_pos_files = util.list_mat_files_sorted(behav_root, pos_subfolder)
     sorted_pupil_files = util.list_mat_files_sorted(behav_root, pupil_subfolder)
     sorted_rect_files = util.list_mat_files_sorted(behav_root, roi_rects_subfolder)
-    sorted_rect_files = match_with_time_files(sorted_rect_files, sorted_time_files)
+    sorted_rect_files = util.match_with_time_files(sorted_rect_files, sorted_time_files)
     # Assert basenames equality
     assert [os.path.basename(f) for f in sorted_time_files] == \
            [os.path.basename(f) for f in sorted_pos_files] == \
@@ -56,12 +44,25 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
 
 
 def use_roi_to_create_frame_and_crop_pos_time(args):
-    
     m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
-        m2_pupil_cleaned, rects_m1, rects_m2 = args
+        m2_pupil_cleaned, rects_m1, rects_m2, stretch_factor = args
     m1_rois = rects_m1.dtype.names
-    m2_rois = rects_m1.dtype.names
-    
+    m2_rois = rects_m2.dtype.names
+    m1_frame, m1_scale = util.get_frame_rect_and_scales_for_m1(
+        rects_m1, m1_rois, stretch_factor)
+    m2_frame = util.get_frame_for_m2(rects_m2, m2_rois, m1_scale)
+    # Filter m1_pos_cleaned within m1_frame
+    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
+        util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
+                                           m1_pupil_cleaned, m1_frame)
+    # Filter m2_pos_cleaned within m2_frame
+    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame = \
+        util.filter_positions_within_frame(m2_pos_cleaned, time_vec_cleaned,
+                                           m2_pupil_cleaned, m2_frame)
+    return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois,
+            m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois)
+
+
 
 def remove_nans_in_pos_time(loaded_pos_file, loaded_time_file,
                      loaded_rect_file, loaded_pupil_file):
@@ -98,8 +99,8 @@ def remove_nans_in_pos_time(loaded_pos_file, loaded_time_file,
     # Remove NaN values from position data
     valid_indices_m1 = ~np.isnan(m1_pos_cleaned).any(axis=0)
     valid_indices_m2 = ~np.isnan(m2_pos_cleaned).any(axis=0)
-    m1_pos_cleaned = m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
-    m2_pos_cleaned = m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2]
+    m1_pos_cleaned = m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T
+    m2_pos_cleaned = m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T
     m1_pupil_cleaned = m1_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
     m2_pupil_cleaned = m2_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
     time_vec_cleaned = time_vec_cleaned[valid_indices_m1 & valid_indices_m2]

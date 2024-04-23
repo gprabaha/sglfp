@@ -15,13 +15,13 @@ import plotter
 
 def generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                         sorted_rect_files, sorted_pupil_files,
-                        plot_root, plot_dir_name):
+                        plot_root, plot_dir_name, stretch_factor, n_bins):
     args_list = []
     for pos_file, time_file, rect_file, pupil_file in \
             zip(sorted_pos_files, sorted_time_files,
                 sorted_rect_files, sorted_pupil_files):
         args_list.append((pos_file, time_file, rect_file,
-                          pupil_file, plot_root, plot_dir_name))
+                          pupil_file, plot_root, plot_dir_name, stretch_factor, n_bins))
     
     # Parallel
     
@@ -43,6 +43,8 @@ time_subfolder_path = 'aligned_raw_samples/time'
 pupil_subfolder_path = 'aligned_raw_samples/pupil_size'
 plot_root = "/gpfs/milgram/project/chang/pg496/data_dir/social_gaze/plots"
 plot_dir_name = "pupil_heatmaps"
+stretch_factor = 1.1
+n_bins = 100
 
 sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files = \
     proc_behav.sort_and_match_gaze_files(behav_root, time_subfolder_path,
@@ -51,6 +53,6 @@ sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files = \
 
 generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                     sorted_rect_files, sorted_pupil_files,
-                    plot_root, plot_dir_name)
+                    plot_root, plot_dir_name, stretch_factor, n_bins)
 
 
