@@ -15,7 +15,7 @@ import proc_behav
 
 import pdb
 
-def plot_roi_rects(ax, rects, roi):
+def plot_roi_rects(ax, rects, roi, make_legend=False):
     """
     Plot rectangles on the given axis.
     Args:
@@ -35,7 +35,8 @@ def plot_roi_rects(ax, rects, roi):
         rect_patch = patches.Rectangle(
             (x1, y1), width, height, edgecolor=color, facecolor='none', label=roi_name)
         ax.add_patch(rect_patch)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), shadow=True, ncol=2)
+    if make_legend:
+        ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), shadow=True, ncol=3)
 
 def plot_gaze_density(ax, heatmap, xedges, yedges, title):
     ax.imshow(heatmap.T, extent=[xedges[0], xedges[-1], yedges[0], yedges[-1]], origin="lower")
@@ -69,10 +70,10 @@ def plot_mean_pupil_size_distribution(pruned_files, session, run_number,
         proc_behav.calculate_gaze_avg_pupil_size(
             m2_pos_within_frame[:,0], m2_pos_within_frame[:,1], m2_pupil_within_frame, bins)
     # Plot subplots
-    fig, axs = plt.subplots(2, 2, figsize=(12, 9))
+    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
     # Plot m1 gaze density
     plot_gaze_density(axs[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
-    plot_roi_rects(axs[0, 0], rects_m1, m1_rois)
+    plot_roi_rects(axs[0, 0], rects_m1, m1_rois, make_legend=True)
     # Plot m2 gaze density
     plot_gaze_density(axs[0, 1], heatmap_m2, xedges_m2, yedges_m2, 'm2 Gaze Density')
     plot_roi_rects(axs[0, 1], rects_m2, m2_rois)
@@ -84,7 +85,7 @@ def plot_mean_pupil_size_distribution(pruned_files, session, run_number,
     plot_roi_rects(axs[1, 1], rects_m2, m2_rois)
     # Set super-title
     super_title = f"Session: {session.strftime('%Y-%m-%d')} - Run: {run_number}"
-    fig.suptitle(super_title, fontsize=14)    
+    fig.suptitle(super_title, fontsize=14)
     # Save plot
     plot_name = os.path.basename(pos_file).replace('.mat', '.png')
     session_folder = session.strftime('%Y-%m-%d')

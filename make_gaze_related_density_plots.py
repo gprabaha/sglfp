@@ -24,12 +24,15 @@ def generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                           pupil_file, plot_root, plot_dir_name, stretch_factor, n_bins))
     
     # Parallel
+    #'''
     util.run_parallel_function(
         plotter.plot_pupil_dustribution_for_one_file, args_list)
+    #'''
     
     # One serial iteration
-    # plotter.plot_pupil_dustribution_for_one_file(args_list[0])
-
+    '''
+    plotter.plot_pupil_dustribution_for_one_file(args_list[5])
+    '''
 
 ##########
 ## MAIN ##
