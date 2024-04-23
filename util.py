@@ -44,9 +44,9 @@ def get_frame_rect_and_scales_for_m1(rects_m1, m1_rois, stretch_factor):
         face_center = find_center(face_rect)
         y_top = min(l_obj_rect[1], r_obj_rect[1])
         y_scale = face_center[1] - y_top
-        y_bottom = face_center[1] + stretch_factor * y_scale
-        y_top = face_center[1] - stretch_factor * y_scale
-        x_scale = min(face_center[0] - l_obj_rect[0], r_obj_rect[0] - face_center[0])
+        y_bottom = face_center[1] + stretch_factor * y_scale * 1.2
+        y_top = face_center[1] - stretch_factor * y_scale * 1.2
+        x_scale = max(face_center[0] - l_obj_rect[0], r_obj_rect[0] - face_center[0])
         x_left = face_center[0] - stretch_factor * x_scale
         x_right = face_center[0] + stretch_factor * x_scale
         frame_rect = [x_left, y_top, x_right, y_bottom]
@@ -56,14 +56,14 @@ def get_frame_rect_and_scales_for_m1(rects_m1, m1_rois, stretch_factor):
         return None, None
     
 
-def get_frame_for_m2(rects_m2, m2_rois, m1_scale):
+def get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor):
     if 'face' in m2_rois:
         face_rect = rects_m2['face'][0][0]
         face_center = find_center(face_rect)
-        x_left = face_center[0] - + m1_scale[0]
-        y_top = face_center[1] - m1_scale[1]
-        x_right = face_center[0] + m1_scale[0]
-        y_bottom = face_center[1] + m1_scale[1]
+        x_left = face_center[0] - stretch_factor * m1_scale[0]
+        y_top = face_center[1] - stretch_factor * m1_scale[1] * 1.2
+        x_right = face_center[0] + stretch_factor * m1_scale[0]
+        y_bottom = face_center[1] + stretch_factor * m1_scale[1] * 1.2
         frame_rect = [x_left, y_top, x_right, y_bottom]
         return frame_rect
     else:

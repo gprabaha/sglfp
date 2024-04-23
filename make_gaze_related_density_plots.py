@@ -24,12 +24,11 @@ def generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                           pupil_file, plot_root, plot_dir_name, stretch_factor, n_bins))
     
     # Parallel
+    util.run_parallel_function(
+        plotter.plot_pupil_dustribution_for_one_file, args_list)
     
-    # util.run_parallel_function(
-    #     plotter.plot_pupil_dustribution_for_one_file, args_list)
-    
-    # Serial
-    plotter.plot_pupil_dustribution_for_one_file(args_list[0])
+    # One serial iteration
+    # plotter.plot_pupil_dustribution_for_one_file(args_list[0])
 
 
 ##########
@@ -42,8 +41,8 @@ roi_rects_subfolder_path = 'roi_rect_tables'
 time_subfolder_path = 'aligned_raw_samples/time'
 pupil_subfolder_path = 'aligned_raw_samples/pupil_size'
 plot_root = "/gpfs/milgram/project/chang/pg496/data_dir/social_gaze/plots"
-plot_dir_name = "pupil_heatmaps"
-stretch_factor = 1.1
+plot_dir_name = "pupil_heatmaps_cropped_by_roi"
+stretch_factor = 1.2
 n_bins = 100
 
 sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files = \

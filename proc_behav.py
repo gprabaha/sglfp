@@ -50,7 +50,7 @@ def use_roi_to_create_frame_and_crop_pos_time(args):
     m2_rois = rects_m2.dtype.names
     m1_frame, m1_scale = util.get_frame_rect_and_scales_for_m1(
         rects_m1, m1_rois, stretch_factor)
-    m2_frame = util.get_frame_for_m2(rects_m2, m2_rois, m1_scale)
+    m2_frame = util.get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor)
     # Filter m1_pos_cleaned within m1_frame
     m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
         util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
