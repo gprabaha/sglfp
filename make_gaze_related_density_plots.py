@@ -13,15 +13,16 @@ import proc_behav
 import plotter
 
 
-def generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
-                        sorted_rect_files, sorted_pupil_files,
-                        plot_root, plot_dir_name, stretch_factor, n_bins):
+def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
+                                          plot_dir_name, stretch_factor, n_bins):
+    sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files \
+        = ordered_gaze_files
     args_list = []
     for pos_file, time_file, rect_file, pupil_file in \
             zip(sorted_pos_files, sorted_time_files,
                 sorted_rect_files, sorted_pupil_files):
-        args_list.append((pos_file, time_file, rect_file,
-                          pupil_file, plot_root, plot_dir_name, stretch_factor, n_bins))
+        args_list.append((pos_file, time_file, rect_file, pupil_file,
+                          plot_root, plot_dir_name, stretch_factor, n_bins))
     
     # Parallel
     #'''
@@ -48,13 +49,10 @@ plot_dir_name = "pupil_heatmaps_cropped_by_roi"
 stretch_factor = 1.2
 n_bins = 100
 
-sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files = \
-    proc_behav.sort_and_match_gaze_files(behav_root, time_subfolder_path,
-                                         pos_subfolder_path, pupil_subfolder_path,
-                                         roi_rects_subfolder_path)
-
-generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
-                    sorted_rect_files, sorted_pupil_files,
-                    plot_root, plot_dir_name, stretch_factor, n_bins)
+args_to_acquire_gaze_files = (behav_root, time_subfolder_path, pos_subfolder_path,
+                              pupil_subfolder_path, roi_rects_subfolder_path)
+ordered_gaze_files = proc_behav.sort_and_match_gaze_files(args_to_acquire_gaze_files)
+generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
+                                      plot_dir_name, stretch_factor, n_bins)
 
 

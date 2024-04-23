@@ -14,8 +14,7 @@ import util
 import pdb
 
 
-def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
-                              pupil_subfolder, roi_rects_subfolder):
+def sort_and_match_gaze_files(args):
     """
     Sort and match gaze files from subfolders.
     Args:
@@ -30,6 +29,7 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
     - sorted_pupil_files (list): Sorted pupil file paths.
     - sorted_rect_files (list): Sorted ROI rects file paths.
     """
+    behav_root, time_subfolder, pos_subfolder, pupil_subfolder, roi_rects_subfolder = args
     sorted_time_files = util.list_mat_files_sorted(behav_root, time_subfolder)
     sorted_pos_files = util.list_mat_files_sorted(behav_root, pos_subfolder)
     sorted_pupil_files = util.list_mat_files_sorted(behav_root, pupil_subfolder)
@@ -40,7 +40,7 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
            [os.path.basename(f) for f in sorted_pos_files] == \
            [os.path.basename(f) for f in sorted_rect_files] == \
            [os.path.basename(f) for f in sorted_pupil_files]
-    return sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files
+    return (sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files)
 
 
 def use_roi_to_create_frame_and_crop_pos_time(args):
