@@ -55,7 +55,15 @@ def sort_and_match_gaze_files(behav_root, time_subfolder, pos_subfolder,
     return sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files
 
 
-def extract_pos_time(loaded_pos_file, loaded_time_file,
+def use_roi_to_create_frame_and_crop_pos_time(args):
+    
+    m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
+        m2_pupil_cleaned, rects_m1, rects_m2 = args
+    m1_rois = rects_m1.dtype.names
+    m2_rois = rects_m1.dtype.names
+    
+
+def remove_nans_in_pos_time(loaded_pos_file, loaded_time_file,
                      loaded_rect_file, loaded_pupil_file):
     """
     Extract position, time, pupil, and ROI rects data.
@@ -76,13 +84,11 @@ def extract_pos_time(loaded_pos_file, loaded_time_file,
     m1_pos = loaded_pos_file['aligned_position_file']['m1'][0][0]
     m2_pos = loaded_pos_file['aligned_position_file']['m2'][0][0]
     time_vec = loaded_time_file['time_file']['t'][0][0]
-    rects_mat_m1 = loaded_rect_file['roi_rects'][0][0]['m1']
     m1_pupil = loaded_pupil_file['var'][0][0]['m1'][0]
     m2_pupil = loaded_pupil_file['var'][0][0]['m2'][0]
     # Extract ROI rects
-    rects_m1 = [rects_mat_m1[i][1].squeeze() for i in range(len(rects_mat_m1))]
-    rects_mat_m2 = loaded_rect_file['roi_rects'][0][0]['m2']
-    rects_m2 = [rects_mat_m2[i][1].squeeze() for i in range(len(rects_mat_m2))]
+    rects_m1 = loaded_rect_file['roi_rects']['m1'][0][0][0]
+    rects_m2 = loaded_rect_file['roi_rects']['m2'][0][0][0]
     # Remove NaN values
     time_vec_cleaned = time_vec[~np.isnan(time_vec).squeeze()]
     m1_pos_cleaned = m1_pos[:, ~np.isnan(time_vec.T)[0]]
@@ -97,8 +103,8 @@ def extract_pos_time(loaded_pos_file, loaded_time_file,
     m1_pupil_cleaned = m1_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
     m2_pupil_cleaned = m2_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
     time_vec_cleaned = time_vec_cleaned[valid_indices_m1 & valid_indices_m2]
-    return m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, \
-           m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2
+    return (m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned,
+           m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2)
 
 
 def calculate_gaze_avg_pupil_size(pos_x, pos_y, pupil, bins):

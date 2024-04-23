@@ -13,6 +13,8 @@ import scipy
 import util
 import proc_behav
 
+import pdb
+
 def plot_roi_rects(ax, rects, color='r'):
     """
     Plot rectangles on the given axis.
@@ -23,6 +25,9 @@ def plot_roi_rects(ax, rects, color='r'):
     Returns:
     - None
     """
+    
+    # This has to be changed to adapt to the updated struct input
+    
     for rect in rects:
         x1, y1, x2, y2 = rect
         width = x2 - x1
@@ -53,6 +58,16 @@ def plot_mean_pupil_size_distribution(
     Returns:
     - None
     """
+    
+    # 1. write a function to prune x and y pos based on roi. in the function
+    # consider the fact that ROIs of M1 and M2 are different
+    
+    # 2. make gaze density plots
+    
+    # 3. make fixation density plots
+    
+    # 4. make saccade start and stop plots (think about how exactly)
+    
     bins = 100
     # Calculate average pupil for m1
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
@@ -132,12 +147,18 @@ def plot_pupil_dustribution_for_one_file(args):
     loaded_pupil_file = scipy.io.loadmat(pupil_file)
     session = util.extract_session_date(pos_file)
     run_number = util.extract_run_number(pos_file)
+    
+    pdb.set_trace()
+    
     try:
         m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, \
             m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2 = \
                 proc_behav.extract_pos_time(
                     loaded_pos_file, loaded_time_file,
                     loaded_rect_file, loaded_pupil_file)
+        
+        
+        
         plot_mean_pupil_size_distribution(
             m1_pos_cleaned, m2_pos_cleaned, rects_m1, rects_m2,
             m1_pupil_cleaned, m2_pupil_cleaned, session, run_number,

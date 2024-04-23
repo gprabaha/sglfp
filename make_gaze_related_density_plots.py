@@ -22,9 +22,14 @@ def generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                 sorted_rect_files, sorted_pupil_files):
         args_list.append((pos_file, time_file, rect_file,
                           pupil_file, plot_root, plot_dir_name))
-
-    util.run_parallel_function(
-        plotter.plot_pupil_dustribution_for_one_file, args_list)
+    
+    # Parallel
+    
+    # util.run_parallel_function(
+    #     plotter.plot_pupil_dustribution_for_one_file, args_list)
+    
+    # Serial
+    plotter.plot_pupil_dustribution_for_one_file(args_list[0])
 
 
 ##########
@@ -47,6 +52,5 @@ sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files = \
 generate_pupil_distrubutions_parallel(sorted_pos_files, sorted_time_files,
                     sorted_rect_files, sorted_pupil_files,
                     plot_root, plot_dir_name)
-
 
 
