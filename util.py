@@ -92,13 +92,11 @@ def get_frame_rect_and_scales_for_m1(rects_m1, m1_rois, stretch_factor):
 def get_frame_for_m2(rects_m2, m2_rois, m1_scale, stretch_factor):
     """
     Get frame rectangle for M2 based on M1's scale.
-
     Args:
     - rects_m2 (dict): Dictionary containing M2 rectangle data.
     - m2_rois (list): List of regions of interest for M2.
     - m1_scale (list): List containing scaling factors from M1 [x_scale, y_scale].
     - stretch_factor (float): Scaling factor.
-
     Returns:
     - frame_rect (list): List containing frame rectangle coordinates [x_left, y_top, x_right, y_bottom].
     """
@@ -194,3 +192,15 @@ def run_parallel_function(function, args_list, num_processes=None):
     with multiprocessing.Pool(processes=num_processes) as pool:
         result_list = list(tqdm(pool.imap_unordered(function, args_list), total=len(args_list)))  # Run the function in parallel using multiprocessing.Pool
     return result_list
+
+
+def create_rects_dict(rects_array):
+    rects_dict = {}
+    for field_name in rects_array.dtype.names:
+        rects_dict[field_name] = [rects_array[field_name][0][0] for rects_array[field_name] in rects_array]
+    return rects_dict
+    
+    
+    
+    
+    

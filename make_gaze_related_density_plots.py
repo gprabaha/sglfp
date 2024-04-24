@@ -35,6 +35,15 @@ def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
     plotter.plot_pupil_dustribution_for_one_file(args_list[5])
     '''
 
+
+def generate_fixation_density_plots_for_each_session(session_files):
+    for file_tuple in session_files:
+        plotter.plot_fixation_distribution_for_one_session(file_tuple)
+
+
+
+
+
 ##########
 ## MAIN ##
 ##########
@@ -52,7 +61,12 @@ n_bins = 100
 args_to_acquire_gaze_files = (behav_root, time_subfolder_path, pos_subfolder_path,
                               pupil_subfolder_path, roi_rects_subfolder_path)
 ordered_gaze_files = proc_behav.sort_and_match_gaze_files(args_to_acquire_gaze_files)
+'''
 generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
                                       plot_dir_name, stretch_factor, n_bins)
+'''
+
+session_files = proc_behav.group_files_by_session(ordered_gaze_files)
 
 
+generate_fixation_density_plots_for_each_session(session_files)

@@ -160,3 +160,40 @@ def calculate_gaze_avg_pupil_size(pos_x, pos_y, pupil, bins):
             if len(indices) > 0:
                 avg_pupil[i, j] = np.mean(pupil[indices])
     return heatmap, avg_pupil, xedges, yedges
+
+
+
+def group_files_by_session(ordered_gaze_files):
+    sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files \
+        = ordered_gaze_files
+    # Ensure that filenames in each list are exactly the same and in the same order
+    filenames_time = [os.path.basename(file) for file in sorted_time_files]
+    filenames_pos = [os.path.basename(file) for file in sorted_pos_files]
+    filenames_pupil = [os.path.basename(file) for file in sorted_pupil_files]
+    filenames_rect = [os.path.basename(file) for file in sorted_rect_files]
+    
+    if filenames_time != filenames_pos or filenames_time != filenames_pupil or filenames_time != filenames_rect:
+        raise ValueError("Filenames in the lists are not the same or not in the same order")
+    
+    # Group files by session id
+    sessions = {}
+    for file_path in sorted_time_files + sorted_pos_files + sorted_pupil_files + sorted_rect_files:
+        filename = os.path.basename(file_path)
+        session_id = filename.split('_')[0]  # Assuming session id is the part before the first underscore
+        if session_id not in sessions:
+            sessions[session_id] = [[], [], [], []]  # 4 lists for each file group
+        if file_path in sorted_time_files:
+            sessions[session_id][0].append(file_path)
+        elif file_path in sorted_pos_files:
+            sessions[session_id][1].append(file_path)
+        elif file_path in sorted_pupil_files:
+            sessions[session_id][2].append(file_path)
+        elif file_path in sorted_rect_files:
+            sessions[session_id][3].append(file_path)
+    
+    # Convert the dictionary to a list of tuples
+    session_files = [tuple(session_data) for session_data in sessions.values()]
+    
+    return session_files
+
+
