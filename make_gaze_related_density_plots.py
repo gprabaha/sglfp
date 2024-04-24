@@ -36,9 +36,10 @@ def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
     '''
 
 
-def generate_fixation_density_plots_for_each_session(session_files):
+def generate_fixation_density_plots_for_each_session(session_files, plot_root,
+                                      plot_dir_name, stretch_factor, n_bins):
     for file_tuple in session_files:
-        plotter.plot_fixation_distribution_for_one_session(file_tuple)
+        plotter.plot_fixation_distribution_for_one_session(file_tuple, stretch_factor)
 
 
 
@@ -69,4 +70,5 @@ generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
 session_files = proc_behav.group_files_by_session(ordered_gaze_files)
 
 
-generate_fixation_density_plots_for_each_session(session_files)
+generate_fixation_density_plots_for_each_session(session_files, plot_root,
+                                      plot_dir_name, stretch_factor, n_bins)
