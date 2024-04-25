@@ -176,9 +176,9 @@ def plot_pupil_dustribution_for_one_file(args):
         pass
 
 
-def plot_gaze_fixation_and_pupil_heatmap_for_session(pruned_files, session,
-                                                     pos_file, plot_root,
-                                                     plot_dir_name, n_bins):
+def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root, 
+                                                     plot_dir_name, stretch_factor,
+                                                     n_bins):
     """
     Plot mean pupil size distribution.
     Args:
@@ -192,9 +192,13 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(pruned_files, session,
     Returns:
     - None
     """
+    time_files, pos_files, pupil_files, rect_files = file_tuple
+    gaze_events_in_session = \
+        proc_behav.get_pos_time_pupil_fix_and_rois_within_session(
+            file_tuple, stretch_factor)
     # Extract cleaned data and metadata
     m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois, \
-    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois = pruned_files
+    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois = gaze_events_in_session
     bins = n_bins
     # Calculate gaze density and average pupil size for M1
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
@@ -232,49 +236,4 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(pruned_files, session,
 
 
 
-def plot_fixation_distribution_for_one_session(file_tuple, stretch_factor):
-    time_files, pos_files, pupil_files, rect_files = file_tuple
-    m1_pos_in_session = np.empty((0,2))
-    m2_pos_in_session = np.empty((0,2))
-    m1_pupil_in_session = []
-    m2_pupil_in_session = []
-    time_in_session = np.empty((0,1))
-    m1_roi_rects = []
-    m2_roi_rects = []
-    for time_file, pos_file, pupil_file, rect_file in zip(
-            time_files, pos_files, pupil_files, rect_files):
-        loaded_pos_file = scipy.io.loadmat(pos_file)
-        loaded_time_file = scipy.io.loadmat(time_file)
-        loaded_rect_file = scipy.io.loadmat(rect_file)
-        loaded_pupil_file = scipy.io.loadmat(pupil_file)
-        nan_removed_files = proc_behav.remove_nans_in_pos_time(
-            loaded_pos_file, loaded_time_file, loaded_rect_file, loaded_pupil_file)
-        # Unpack cleaned data
-        m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
-            m2_pupil_cleaned, rects_m1, rects_m2 = nan_removed_files
-        m1_pos_in_session = np.concatenate((m1_pos_in_session, np.array(m1_pos_cleaned)), axis=0)
-        m2_pos_in_session = np.concatenate((m2_pos_in_session, np.array(m2_pos_cleaned)), axis=0)
-        m1_pupil_in_session = np.concatenate((m1_pupil_in_session, np.array(m1_pupil_cleaned)), axis=0)
-        m2_pupil_in_session = np.concatenate((m2_pupil_in_session, np.array(m2_pupil_cleaned)), axis=0)
-        time_in_session = np.concatenate((time_in_session, np.array(time_vec_cleaned)), axis=0)
-        if len(m1_roi_rects) == 0:
-            m1_roi_rects = rects_m1
-        if len(m2_roi_rects) == 0:
-            m2_roi_rects = rects_m2
-    m1_rois = rects_m1.dtype.names
-    m2_rois = rects_m2.dtype.names
-    # Get frame and scaling information for M1
-    m1_frame, m1_scale = util.get_frame_rect_and_scales_for_m1(
-        m1_roi_rects, m1_rois, stretch_factor)
-    # Get frame for M2 using M1 scaling
-    m2_frame = util.get_frame_for_m2(m2_roi_rects, m2_rois, m1_scale, stretch_factor)
-    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
-        util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
-                                           m1_pupil_cleaned, m1_frame)
-    # Filter M2 position data within M2 frame
-    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame = \
-        util.filter_positions_within_frame(m2_pos_cleaned, time_vec_cleaned,
-                                           m2_pupil_cleaned, m2_frame)
-    # Return the cropped data and relevant information
-    return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois,
-            m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois)
+
