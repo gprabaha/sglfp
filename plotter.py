@@ -178,7 +178,7 @@ def plot_pupil_dustribution_for_one_file(args):
 
 def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root, 
                                                      plot_dir_name, stretch_factor,
-                                                     n_bins):
+                                                     n_bins, sampling_rate):
     """
     Plot mean pupil size distribution.
     Args:
@@ -195,19 +195,27 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     time_files, pos_files, pupil_files, rect_files = file_tuple
     gaze_events_in_session = \
         proc_behav.get_pos_time_pupil_fix_and_rois_within_session(
-            file_tuple, stretch_factor)
+            file_tuple, stretch_factor, sampling_rate)
     # Extract cleaned data and metadata
-    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois, \
-    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois = gaze_events_in_session
+    m1_pos_in_session, m1_time_in_session, m1_pupil_in_session, m1_fix_in_session, rects_m1, m1_rois, \
+    m2_pos_in_session, m2_time_in_session, m2_pupil_in_session, m2_fix_in_session, rects_m2, m2_rois = gaze_events_in_session
     bins = n_bins
+    
+    ## Use the function below to make a new function called:
+        # proc_behav.calculate_fix_avg_pupil_size
+    
     # Calculate gaze density and average pupil size for M1
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m1_pos_within_frame[:,0], m1_pos_within_frame[:,1], m1_pupil_within_frame, bins)
+            m1_pos_in_session[:,0], m1_pos_in_session[:,1], m1_pupil_in_session, bins)
     # Calculate gaze density and average pupil size for M2
     heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m2_pos_within_frame[:,0], m2_pos_within_frame[:,1], m2_pupil_within_frame, bins)
+            m2_pos_in_session[:,0], m2_pos_in_session[:,1], m2_pupil_in_session, bins)
+        
+    # call proc_behav.calculate_fix_avg_pupil_size
+    
+    
     # Plot subplots
     fig, axs = plt.subplots(3, 2, figsize=(12, 8))
     # Plot M1 gaze density

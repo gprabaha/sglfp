@@ -129,11 +129,11 @@ def remove_nans_in_pos_time(loaded_pos_file, loaded_time_file,
     # Remove NaN values from position data
     valid_indices_m1 = ~np.isnan(m1_pos_cleaned).any(axis=0)
     valid_indices_m2 = ~np.isnan(m2_pos_cleaned).any(axis=0)
-    m1_pos_cleaned = m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T
-    m2_pos_cleaned = m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T
-    m1_pupil_cleaned = m1_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
-    m2_pupil_cleaned = m2_pupil_cleaned[valid_indices_m1 & valid_indices_m2]
-    time_vec_cleaned = time_vec_cleaned[valid_indices_m1 & valid_indices_m2]
+    m1_pos_cleaned = np.array(m1_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T)
+    m2_pos_cleaned = np.array(m2_pos_cleaned[:, valid_indices_m1 & valid_indices_m2].T)
+    m1_pupil_cleaned = np.array(m1_pupil_cleaned[valid_indices_m1 & valid_indices_m2])
+    m2_pupil_cleaned = np.array(m2_pupil_cleaned[valid_indices_m1 & valid_indices_m2])
+    time_vec_cleaned = np.array(time_vec_cleaned[valid_indices_m1 & valid_indices_m2])
     return (m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned,
            m1_pupil_cleaned, m2_pupil_cleaned, rects_m1, rects_m2)
 
@@ -194,7 +194,7 @@ def group_files_by_session(ordered_gaze_files):
     return session_files
 
 
-def get_pos_time_pupil_and_rois_within_session(file_tuple, stretch_factor):
+def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, sampling_rate):
     time_files, pos_files, pupil_files, rect_files = file_tuple
     m1_pos_in_session = np.empty((0,2))
     m2_pos_in_session = np.empty((0,2))
@@ -219,12 +219,14 @@ def get_pos_time_pupil_and_rois_within_session(file_tuple, stretch_factor):
         # Unpack cleaned data
         m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
             m2_pupil_cleaned, rects_m1, rects_m2 = nan_removed_files
-        
         # Find fixations here
-        
-        pdb.set_trace()
+        m1_fix = is_fixation(m1_pos_cleaned, time_vec_cleaned, sampling_rate=sampling_rate)
+        m2_fix = is_fixation(m2_pos_cleaned, time_vec_cleaned, sampling_rate=sampling_rate)
+        # Update arrays
         m1_pos_in_session = np.concatenate((m1_pos_in_session, np.array(m1_pos_cleaned)), axis=0)
         m2_pos_in_session = np.concatenate((m2_pos_in_session, np.array(m2_pos_cleaned)), axis=0)
+        m1_fix_in_session = np.concatenate((m1_fix_in_session, np.array(m1_fix)), axis=0)
+        m2_fix_in_session = np.concatenate((m2_fix_in_session, np.array(m2_fix)), axis=0)
         m1_pupil_in_session = np.concatenate((m1_pupil_in_session, np.array(m1_pupil_cleaned)), axis=0)
         m2_pupil_in_session = np.concatenate((m2_pupil_in_session, np.array(m2_pupil_cleaned)), axis=0)
         time_in_session = np.concatenate((time_in_session, np.array(time_vec_cleaned)), axis=0)
@@ -247,8 +249,8 @@ def get_pos_time_pupil_and_rois_within_session(file_tuple, stretch_factor):
         util.filter_positions_within_frame(m2_pos_cleaned, time_vec_cleaned,
                                            m2_pupil_cleaned, m2_frame)
     # Return the cropped data and relevant information
-    return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois,
-            m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois)
+    return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, m1_fix_in_session, rects_m1, m1_rois,
+            m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, m1_fix_in_session, rects_m2, m2_rois)
 
 ## FIXATIONS ##
 
@@ -322,12 +324,12 @@ def min_duration(fixation_list, minDur):
     return [fix for fix in fixation_list if fix[6] >= minDur]
 
 
-def is_fixation(pos, time, t1, t2, minDur, sampling_rate=None):
+def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     # Combine position and time into a single data matrix
     data = np.column_stack((pos, time))
     # Calculate sampling rate if not provided
     if sampling_rate is None:
-        sampling_rate = 1 / (time[1] - time[0])
+        sampling_rate = 1 / (time[1,:] - time[0,:])
     # Set default values
     if minDur is None:
         minDur = 0.01
@@ -337,16 +339,10 @@ def is_fixation(pos, time, t1, t2, minDur, sampling_rate=None):
         t1 = 30
     # Add NaN padding based on sampling rate
     dt = 1 / sampling_rate
-    if not np.isnan(data[0, 0]):  # Add NaN at the beginning if necessary
-        newpoint = np.array([[np.nan, np.nan, time[0] - dt]])
-        data = np.concatenate((newpoint, data), axis=0)
-    if not np.isnan(data[-1, 0]):  # Add NaN at the end if necessary
-        newpoint = np.array([[np.nan, np.nan, time[-1] + dt]])
-        data = np.concatenate((data, newpoint), axis=0)
     # Initialize fix_vector
     fix_vector = np.zeros(data.shape[0])
     # Find segments based on NaN or time interval
-    diff_time = np.diff(time)
+    diff_time = np.diff(time, axis=0)
     start_idc = np.where(diff_time > dt)[0]  # Find indices where time interval is greater than dt
     # Include the first data point index
     start_idc = np.insert(start_idc, 0, 0)

@@ -39,7 +39,8 @@ def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
 def generate_fixation_density_plots_for_each_session(session_files, plot_root,
                                       plot_dir_name, stretch_factor, n_bins):
     for file_tuple in session_files:
-        plotter.plot_fixation_distribution_for_one_session(file_tuple, stretch_factor)
+        plotter.plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
+                                              plot_dir_name, stretch_factor, n_bins)
 
 
 
