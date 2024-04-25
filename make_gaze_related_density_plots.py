@@ -37,10 +37,10 @@ def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
 
 
 def generate_fixation_density_plots_for_each_session(session_files, plot_root,
-                                      plot_dir_name, stretch_factor, n_bins):
+                                      plot_dir_name, stretch_factor, n_bins, sampling_rate):
     for file_tuple in session_files:
         plotter.plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
-                                              plot_dir_name, stretch_factor, n_bins)
+                                              plot_dir_name, stretch_factor, n_bins, sampling_rate)
 
 
 
@@ -59,6 +59,7 @@ plot_root = "/gpfs/milgram/project/chang/pg496/data_dir/social_gaze/plots"
 plot_dir_name = "pupil_heatmaps_cropped_by_roi"
 stretch_factor = 1.2
 n_bins = 100
+sampling_rate = 1e3
 
 args_to_acquire_gaze_files = (behav_root, time_subfolder_path, pos_subfolder_path,
                               pupil_subfolder_path, roi_rects_subfolder_path)
@@ -72,4 +73,4 @@ session_files = proc_behav.group_files_by_session(ordered_gaze_files)
 
 
 generate_fixation_density_plots_for_each_session(session_files, plot_root,
-                                      plot_dir_name, stretch_factor, n_bins)
+                                      plot_dir_name, stretch_factor, n_bins, sampling_rate)

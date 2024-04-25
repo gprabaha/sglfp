@@ -9,6 +9,7 @@ Created on Thu Apr 18 13:47:30 2024
 import os
 import numpy as np
 import scipy
+from tqdm import tqdm
 
 import util
 
@@ -161,8 +162,7 @@ def calculate_gaze_avg_pupil_size(pos_x, pos_y, pupil, bins):
             if len(indices) > 0:
                 avg_pupil[i, j] = np.mean(pupil[indices])
     return heatmap, avg_pupil, xedges, yedges
-
-
+    
 
 def group_files_by_session(ordered_gaze_files):
     sorted_time_files, sorted_pos_files, sorted_pupil_files, sorted_rect_files \
@@ -208,8 +208,8 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
     
     # Extract session here and return it
     
-    for time_file, pos_file, pupil_file, rect_file in zip(
-            time_files, pos_files, pupil_files, rect_files):
+    for time_file, pos_file, pupil_file, rect_file in tqdm(zip(
+            time_files, pos_files, pupil_files, rect_files)):
         loaded_pos_file = scipy.io.loadmat(pos_file)
         loaded_time_file = scipy.io.loadmat(time_file)
         loaded_rect_file = scipy.io.loadmat(rect_file)
@@ -234,28 +234,33 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
             m1_roi_rects = rects_m1
         if len(m2_roi_rects) == 0:
             m2_roi_rects = rects_m2
-    m1_rois = rects_m1.dtype.names
-    m2_rois = rects_m2.dtype.names
+    m1_rois = m1_roi_rects.dtype.names
+    m2_rois = m2_roi_rects.dtype.names
     # Get frame and scaling information for M1
     m1_frame, m1_scale = util.get_frame_rect_and_scales_for_m1(
         m1_roi_rects, m1_rois, stretch_factor)
     # Get frame for M2 using M1 scaling
     m2_frame = util.get_frame_for_m2(m2_roi_rects, m2_rois, m1_scale, stretch_factor)
-    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
-        util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
-                                           m1_pupil_cleaned, m1_frame)
+    
+    m1_data_within_frame = util.filter_data_within_frame(
+        (m1_pos_in_session, time_in_session, m1_pupil_in_session, m1_fix_in_session),
+        m1_frame)
     # Filter M2 position data within M2 frame
-    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame = \
-        util.filter_positions_within_frame(m2_pos_cleaned, time_vec_cleaned,
-                                           m2_pupil_cleaned, m2_frame)
+    m2_data_within_frame = util.filter_data_within_frame(
+        (m2_pos_in_session, time_in_session, m2_pupil_in_session, m2_fix_in_session),
+        m2_frame)
+    
+    # All fixation values are coming to be 0 now. Something needs fixing
+    pdb.set_trace()
     # Return the cropped data and relevant information
-    return (m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, m1_fix_in_session, rects_m1, m1_rois,
-            m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, m1_fix_in_session, rects_m2, m2_rois)
+    return m1_data_within_frame, rects_m1, m1_rois, m2_data_within_frame, rects_m2, m2_rois
 
 ## FIXATIONS ##
 
 def fixation_detection(data, t1, t2, minDur, s):
     n = len(data)
+    if n == 0:
+        return []  # Return empty list if data is empty
     fixations = np.zeros((n, 4))  # Initialize fixations array
     # Spatial clustering
     fixid = 1
@@ -275,7 +280,6 @@ def fixation_detection(data, t1, t2, minDur, s):
     for i in range(1, int(number_fixations) + 1):
         centerx_t2, centery_t2, n_t1_t2, n_t2, t1_t2, t2_t2, d_t2, out_points = fixations_t2(fixations, i, t2)
         fixation_list.append([centerx_t2, centery_t2, n_t1_t2, n_t2, t1_t2, t2_t2, d_t2])
-    
     # Duration thresholding
     fixation_list = min_duration(fixation_list, minDur)
     # Final output
@@ -301,15 +305,15 @@ def fixations_t2(fixations, fixation_id, t2):
         if d > t2:
             fixations_id[i, 3] = 0
     # Initialize lists
-    fixations_list_t2 = []
-    list_out_points = []
+    fixations_list_t2 = np.empty((0, 4))  # Initialize fixations_list_t2 as an empty 2D array
+    list_out_points = np.empty((0, 4))  # Initialize list_out_points as an empty 2D array
     for i in range(number_t1):
         if fixations_id[i, 3] > 0:
-            fixations_list_t2.append(fixations_id[i, :])
+            fixations_list_t2 = np.vstack((fixations_list_t2, fixations_id[i, :]))
         else:
-            list_out_points.append(fixations_id[i, :])
+            list_out_points = np.vstack((list_out_points, fixations_id[i, :]))
     # Compute number of t2 fixations
-    number_t2 = len(fixations_list_t2)
+    number_t2 = fixations_list_t2.shape[0]
     fixx, fixy = np.mean(fixations_list_t2[:, :2], axis=0)
     if number_t2 > 0:
         start_time = fixations_list_t2[0, 2]
@@ -345,7 +349,8 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     diff_time = np.diff(time, axis=0)
     start_idc = np.where(diff_time > dt)[0]  # Find indices where time interval is greater than dt
     # Include the first data point index
-    start_idc = np.insert(start_idc, 0, 0)
+    if start_idc[0] != 0:
+        start_idc = np.insert(start_idc, 0, 0)
     # Loop through segments
     for i_segment in range(len(start_idc)):
         start_idx = start_idc[i_segment]

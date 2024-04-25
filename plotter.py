@@ -212,12 +212,9 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
         proc_behav.calculate_gaze_avg_pupil_size(
             m2_pos_in_session[:,0], m2_pos_in_session[:,1], m2_pupil_in_session, bins)
-        
-    # call proc_behav.calculate_fix_avg_pupil_size
-    
     
     # Plot subplots
-    fig, axs = plt.subplots(3, 2, figsize=(12, 8))
+    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
     # Plot M1 gaze density
     plot_gaze_density(axs[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
     plot_roi_rects(axs[0, 0], rects_m1, m1_rois, make_legend=True)

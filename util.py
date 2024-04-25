@@ -14,31 +14,32 @@ import numpy as np
 
 import pdb
 
-def filter_positions_within_frame(positions, time, pupil, frame):
+def filter_data_within_frame(data_tuple, frame):
     """
     Filter positions, time, and pupil data within a specified frame.
 
     Args:
-    - positions (list): List of (x, y) positions.
-    - time (list): List of corresponding timestamps.
-    - pupil (list): List of corresponding pupil data.
+    - data_tuple (tuple): Tuple containing positions, time, pupil, and additional variables.
     - frame (list): List containing frame coordinates [x1, y1, x2, y2].
 
     Returns:
-    - pos_within_frame (np.array): NumPy array of filtered positions.
-    - time_vec (np.array): NumPy array of filtered timestamps.
-    - pupil (np.array): NumPy array of filtered pupil data.
+    - filtered_data (tuple): Tuple containing filtered positions and the rest of the elements
+                             of the input tuple filtered using positions.
     """
+    positions, *additional_variables = data_tuple
     x1, y1, x2, y2 = frame
-    filtered_data = [(pos, t, p) for pos, t, p in zip(positions, time, pupil)
+    # Filter data within the specified frame
+    filtered_data = [(pos, *additional) for pos, *additional in zip(positions, *additional_variables)
                      if x1 <= pos[0] <= x2 and y1 <= pos[1] <= y2]
     # Unzip the filtered data
-    pos_within_frame, time_vec, pupil = zip(*filtered_data)
+    filtered_positions, *filtered_additional = zip(*filtered_data)
     # Convert to NumPy arrays
-    pos_within_frame = np.array(pos_within_frame)
-    time_vec = np.array(time_vec)
-    pupil = np.array(pupil)
-    return pos_within_frame, time_vec, pupil
+    filtered_positions = np.array(filtered_positions)
+    # Convert filtered additional variables to NumPy arrays
+    filtered_additional = [np.array(var) for var in filtered_additional]
+    # Construct the filtered data tuple
+    filtered_data = (filtered_positions, *filtered_additional)
+    return filtered_data
 
 
 def find_center(rect):
