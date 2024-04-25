@@ -138,6 +138,7 @@ def plot_mean_pupil_size_distribution(pruned_files, session, run_number,
     plt.close(fig)  # Close the figure to release memory
 
 
+
 def plot_pupil_dustribution_for_one_file(args):
     """
     Plot pupil distribution for one file.
@@ -173,6 +174,62 @@ def plot_pupil_dustribution_for_one_file(args):
     except:
         # Do nothing if there's an error
         pass
+
+
+def plot_gaze_fixation_and_pupil_heatmap_for_session(pruned_files, session,
+                                                     pos_file, plot_root,
+                                                     plot_dir_name, n_bins):
+    """
+    Plot mean pupil size distribution.
+    Args:
+    - pruned_files (tuple): Tuple containing cleaned data and metadata.
+    - session (datetime.datetime): Date of the session.
+    - run_number (int): Run number of the session.
+    - pos_file (str): File path for position data.
+    - plot_root (str): Root directory for saving plots.
+    - plot_dir_name (str): Directory name for saving plots.
+    - n_bins (int): Number of bins for histogram.
+    Returns:
+    - None
+    """
+    # Extract cleaned data and metadata
+    m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame, rects_m1, m1_rois, \
+    m2_pos_within_frame, m2_time_within_frame, m2_pupil_within_frame, rects_m2, m2_rois = pruned_files
+    bins = n_bins
+    # Calculate gaze density and average pupil size for M1
+    heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
+        proc_behav.calculate_gaze_avg_pupil_size(
+            m1_pos_within_frame[:,0], m1_pos_within_frame[:,1], m1_pupil_within_frame, bins)
+    # Calculate gaze density and average pupil size for M2
+    heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
+        proc_behav.calculate_gaze_avg_pupil_size(
+            m2_pos_within_frame[:,0], m2_pos_within_frame[:,1], m2_pupil_within_frame, bins)
+    # Plot subplots
+    fig, axs = plt.subplots(3, 2, figsize=(12, 8))
+    # Plot M1 gaze density
+    plot_gaze_density(axs[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
+    plot_roi_rects(axs[0, 0], rects_m1, m1_rois, make_legend=True)
+    # Plot M2 gaze density
+    plot_gaze_density(axs[0, 1], heatmap_m2, xedges_m2, yedges_m2, 'm2 Gaze Density')
+    plot_roi_rects(axs[0, 1], rects_m2, m2_rois)
+    # Plot M1 average pupil size
+    plot_average_pupil(axs[1, 0], avg_pupil_m1, xedges_m1, yedges_m1, 'm1 Average Pupil Size')
+    plot_roi_rects(axs[1, 0], rects_m1, m1_rois)
+    # Plot M2 average pupil size
+    plot_average_pupil(axs[1, 1], avg_pupil_m2, xedges_m2, yedges_m2, 'm2 Average Pupil Size')
+    plot_roi_rects(axs[1, 1], rects_m2, m2_rois)
+    # Set super-title
+    super_title = f"Density for Entire Session: {session.strftime('%Y-%m-%d')}"
+    fig.suptitle(super_title, fontsize=14)
+    # Save plot
+    plot_name = os.path.basename(pos_file).replace('.mat', '.png')
+    session_folder = session.strftime('%Y-%m-%d')
+    save_dir = os.path.join(plot_root, plot_dir_name, session_folder)
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+    plt.savefig(os.path.join(save_dir, plot_name))
+    plt.close(fig)  # Close the figure to release memory
+
 
 
 def plot_fixation_distribution_for_one_session(file_tuple, stretch_factor):
@@ -211,7 +268,6 @@ def plot_fixation_distribution_for_one_session(file_tuple, stretch_factor):
         m1_roi_rects, m1_rois, stretch_factor)
     # Get frame for M2 using M1 scaling
     m2_frame = util.get_frame_for_m2(m2_roi_rects, m2_rois, m1_scale, stretch_factor)
-    pdb.set_trace()
     m1_pos_within_frame, m1_time_within_frame, m1_pupil_within_frame = \
         util.filter_positions_within_frame(m1_pos_cleaned, time_vec_cleaned, 
                                            m1_pupil_cleaned, m1_frame)

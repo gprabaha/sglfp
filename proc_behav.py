@@ -171,10 +171,8 @@ def group_files_by_session(ordered_gaze_files):
     filenames_pos = [os.path.basename(file) for file in sorted_pos_files]
     filenames_pupil = [os.path.basename(file) for file in sorted_pupil_files]
     filenames_rect = [os.path.basename(file) for file in sorted_rect_files]
-    
     if filenames_time != filenames_pos or filenames_time != filenames_pupil or filenames_time != filenames_rect:
         raise ValueError("Filenames in the lists are not the same or not in the same order")
-    
     # Group files by session id
     sessions = {}
     for file_path in sorted_time_files + sorted_pos_files + sorted_pupil_files + sorted_rect_files:
@@ -190,10 +188,123 @@ def group_files_by_session(ordered_gaze_files):
             sessions[session_id][2].append(file_path)
         elif file_path in sorted_rect_files:
             sessions[session_id][3].append(file_path)
-    
     # Convert the dictionary to a list of tuples
     session_files = [tuple(session_data) for session_data in sessions.values()]
-    
     return session_files
+
+
+## FIXATIONS ##
+
+def fixation_detection(data, t1, t2, minDur, s):
+    n = len(data)
+    fixations = np.zeros((n, 4))  # Initialize fixations array
+    # Spatial clustering
+    fixid = 1
+    mx, my, d = 0, 0, 0
+    fixpointer = 1
+    for i in range(n):
+        mx = np.mean(data[fixpointer:i+1, 0])
+        my = np.mean(data[fixpointer:i+1, 1])
+        d = distance2p(mx, my, data[i, 0], data[i, 1])
+        if d > t1:
+            fixid += 1
+            fixpointer = i
+        fixations[i, 3] = fixid
+    # Temporal filtering
+    number_fixations = fixations[-1, 3]
+    fixation_list = []
+    for i in range(1, int(number_fixations) + 1):
+        centerx_t2, centery_t2, n_t1_t2, n_t2, t1_t2, t2_t2, d_t2, out_points = fixations_t2(fixations, i, t2)
+        fixation_list.append([centerx_t2, centery_t2, n_t1_t2, n_t2, t1_t2, t2_t2, d_t2])
+    
+    # Duration thresholding
+    fixation_list = min_duration(fixation_list, minDur)
+    # Final output
+    fix_ranges = []
+    for fix in fixation_list:
+        s_ind = np.where(data[:, 2] == fix[4])[0][0]
+        e_ind = np.where(data[:, 2] == fix[5])[0][-1]
+        fix_ranges.append([s_ind, e_ind])
+    return fix_ranges
+
+
+def distance2p(x1, y1, x2, y2):
+    return np.sqrt((x2 - x1)**2 + (y2 - y1)**2)
+
+
+def fixations_t2(fixations, fixation_id, t2):
+    fixations_id = fixations[fixations[:, 3] == fixation_id]
+    number_t1 = len(fixations_id)
+    # Clustering according to criterion t2
+    fixx, fixy = np.mean(fixations_id[:, :2], axis=0)
+    for i in range(number_t1):
+        d = distance2p(fixx, fixy, fixations_id[i, 0], fixations_id[i, 1])
+        if d > t2:
+            fixations_id[i, 3] = 0
+    # Initialize lists
+    fixations_list_t2 = []
+    list_out_points = []
+    for i in range(number_t1):
+        if fixations_id[i, 3] > 0:
+            fixations_list_t2.append(fixations_id[i, :])
+        else:
+            list_out_points.append(fixations_id[i, :])
+    # Compute number of t2 fixations
+    number_t2 = len(fixations_list_t2)
+    fixx, fixy = np.mean(fixations_list_t2[:, :2], axis=0)
+    if number_t2 > 0:
+        start_time = fixations_list_t2[0, 2]
+        end_time = fixations_list_t2[-1, 2]
+        duration = end_time - start_time
+    else:
+        start_time, end_time, duration = 0, 0, 0
+    return fixx, fixy, number_t1, number_t2, start_time, end_time, duration, list_out_points
+
+
+def min_duration(fixation_list, minDur):
+    return [fix for fix in fixation_list if fix[6] >= minDur]
+
+
+def is_fixation(pos, time, t1, t2, minDur, sampling_rate=None):
+    # Combine position and time into a single data matrix
+    data = np.column_stack((pos, time))
+    # Calculate sampling rate if not provided
+    if sampling_rate is None:
+        sampling_rate = 1 / (time[1] - time[0])
+    # Set default values
+    if minDur is None:
+        minDur = 0.01
+    if t2 is None:
+        t2 = 15
+    if t1 is None:
+        t1 = 30
+    # Add NaN padding based on sampling rate
+    dt = 1 / sampling_rate
+    if not np.isnan(data[0, 0]):  # Add NaN at the beginning if necessary
+        newpoint = np.array([[np.nan, np.nan, time[0] - dt]])
+        data = np.concatenate((newpoint, data), axis=0)
+    if not np.isnan(data[-1, 0]):  # Add NaN at the end if necessary
+        newpoint = np.array([[np.nan, np.nan, time[-1] + dt]])
+        data = np.concatenate((data, newpoint), axis=0)
+    # Initialize fix_vector
+    fix_vector = np.zeros(data.shape[0])
+    # Find segments based on NaN or time interval
+    diff_time = np.diff(time)
+    start_idc = np.where(diff_time > dt)[0]  # Find indices where time interval is greater than dt
+    # Include the first data point index
+    start_idc = np.insert(start_idc, 0, 0)
+    # Loop through segments
+    for i_segment in range(len(start_idc)):
+        start_idx = start_idc[i_segment]
+        end_idx = start_idc[i_segment + 1] - 1 if i_segment + 1 < len(start_idc) else -1
+        # Extract segment data
+        segment_data = data[start_idx:end_idx + 1, :]
+        # Call fixation_detection function on segment data
+        t_ind = fixation_detection(segment_data, t1, t2, minDur, start_idx)
+        # Mark fixations in fix_vector
+        for t_range in t_ind:
+            fix_vector[t_range[0]:t_range[1] + 1] = 1
+    return fix_vector
+
 
 
