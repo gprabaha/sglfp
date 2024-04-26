@@ -11,17 +11,31 @@ from datetime import datetime
 from tqdm import tqdm  # Importing tqdm for progress bar
 import multiprocessing
 import numpy as np
+import math
 
 import pdb
+
+def fetch_monitor_info():
+    return {'height': 27, 'distance': 50, 'vertical_resolution': 768}
+
+
+def px2deg(px, monitor_info=None):
+    if monitor_info is None:
+        monitor_info = fetch_monitor_info() # in defaults
+    h = monitor_info['height']
+    d = monitor_info['distance']
+    r = monitor_info['vertical_resolution']
+    deg_per_px = math.degrees(math.atan2(0.5 * h, d)) / (0.5 * r)
+    deg = px * deg_per_px
+    return deg
+
 
 def filter_data_within_frame(data_tuple, frame):
     """
     Filter positions, time, and pupil data within a specified frame.
-
     Args:
     - data_tuple (tuple): Tuple containing positions, time, pupil, and additional variables.
     - frame (list): List containing frame coordinates [x1, y1, x2, y2].
-
     Returns:
     - filtered_data (tuple): Tuple containing filtered positions and the rest of the elements
                              of the input tuple filtered using positions.

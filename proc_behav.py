@@ -12,6 +12,7 @@ import scipy
 from tqdm import tqdm
 
 import util
+import fix
 
 import pdb
 
@@ -220,8 +221,8 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
         m1_pos_cleaned, m2_pos_cleaned, time_vec_cleaned, m1_pupil_cleaned, \
             m2_pupil_cleaned, rects_m1, rects_m2 = nan_removed_files
         # Find fixations here
-        m1_fix = is_fixation(m1_pos_cleaned, time_vec_cleaned, sampling_rate=sampling_rate)
-        m2_fix = is_fixation(m2_pos_cleaned, time_vec_cleaned, sampling_rate=sampling_rate)
+        m1_fix = fix.is_fixation(util.px2deg(m1_pos_cleaned), time_vec_cleaned, sampling_rate=sampling_rate)
+        m2_fix = fix.is_fixation(util.px2deg(m2_pos_cleaned), time_vec_cleaned, sampling_rate=sampling_rate)
         # Update arrays
         m1_pos_in_session = np.concatenate((m1_pos_in_session, np.array(m1_pos_cleaned)), axis=0)
         m2_pos_in_session = np.concatenate((m2_pos_in_session, np.array(m2_pos_cleaned)), axis=0)
@@ -255,6 +256,8 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
     # Return the cropped data and relevant information
     return m1_data_within_frame, rects_m1, m1_rois, m2_data_within_frame, rects_m2, m2_rois
 
+
+'''
 ## FIXATIONS ##
 
 def fixation_detection(data, t1, t2, minDur, s):
@@ -363,6 +366,6 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
         for t_range in t_ind:
             fix_vector[t_range[0]:t_range[1] + 1] = 1
     return fix_vector
-
+'''
 
 

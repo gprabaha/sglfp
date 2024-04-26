@@ -212,6 +212,8 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
         proc_behav.calculate_gaze_avg_pupil_size(
             m2_pos_in_session[:,0], m2_pos_in_session[:,1], m2_pupil_in_session, bins)
+        
+    fix_heatmap_m1, fix_pupil_m1, fix_xedges_m1, fix_yedges_m1
     
     # Plot subplots
     fig, axs = plt.subplots(2, 2, figsize=(12, 8))
