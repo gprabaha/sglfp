@@ -209,8 +209,12 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
     
     # Extract session here and return it
     
-    for time_file, pos_file, pupil_file, rect_file in tqdm(zip(
-            time_files, pos_files, pupil_files, rect_files)):
+    for i, (time_file, pos_file, pupil_file, rect_file) in \
+        enumerate(
+            tqdm(
+                zip(time_files, pos_files, pupil_files, rect_files),
+                total=len(time_files), desc="Processing file in session:"),
+            1):
         loaded_pos_file = scipy.io.loadmat(pos_file)
         loaded_time_file = scipy.io.loadmat(time_file)
         loaded_rect_file = scipy.io.loadmat(rect_file)
