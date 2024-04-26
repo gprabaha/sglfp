@@ -192,7 +192,16 @@ def list_mat_files_sorted(behav_root, rel_subfolder_path):
     return mat_files
 
 
-def run_parallel_function(function, args_list, num_processes=None):
+
+
+def create_rects_dict(rects_array):
+    rects_dict = {}
+    for field_name in rects_array.dtype.names:
+        rects_dict[field_name] = [rects_array[field_name][0][0] for rects_array[field_name] in rects_array]
+    return rects_dict
+    
+    
+def run_parallel_with_progressbar(function, args_list, num_processes=None):
     """
     Run a function in parallel with multiprocessing.
     Args:
@@ -208,14 +217,20 @@ def run_parallel_function(function, args_list, num_processes=None):
         result_list = list(tqdm(pool.imap_unordered(function, args_list), total=len(args_list)))  # Run the function in parallel using multiprocessing.Pool
     return result_list
 
-
-def create_rects_dict(rects_array):
-    rects_dict = {}
-    for field_name in rects_array.dtype.names:
-        rects_dict[field_name] = [rects_array[field_name][0][0] for rects_array[field_name] in rects_array]
-    return rects_dict
-    
-    
-    
+def run_parallel_without_progressbar(function, args_list, num_processes=None):
+    """
+    Run a function in parallel with multiprocessing without displaying progress.
+    Args:
+    - function: The function to run in parallel.
+    - args_list (list): List of arguments to pass to the function for each parallel process.
+    - num_processes (int): Number of processes to run in parallel. If None, it defaults to the number of CPU cores.
+    Returns:
+    - result_list (list): List of results returned by the function for each parallel process.
+    """
+    if num_processes is None:
+        num_processes = multiprocessing.cpu_count()  # Get the number of CPU cores
+    with multiprocessing.Pool(processes=num_processes) as pool:
+        result_list = pool.map(function, args_list)  # Run the function in parallel using multiprocessing.Pool
+    return result_list
     
     

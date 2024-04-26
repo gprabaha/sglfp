@@ -8,6 +8,8 @@ Created on Fri Apr 26 10:50:18 2024
 
 import numpy as np
 
+import pdb
+
 
 def distance2p(x1, y1, x2, y2):
     """
@@ -94,8 +96,12 @@ def fixation_detection(data, t1, t2, minDur):
     mx, my, d = 0, 0, 0
     fixpointer = 1
     for i in range(n):
-        mx = np.nanmean(data[fixpointer:i+1, 0])
-        my = np.nanmean(data[fixpointer:i+1, 1])
+        segment_data = data[fixpointer:i+1, :]
+        # Skip if segment data is empty
+        if not segment_data.any():
+            continue
+        mx = np.nanmean(segment_data[:, 0])
+        my = np.nanmean(segment_data[:, 1])
         d = distance2p(mx, my, data[i, 0], data[i, 1])
         if d > t1:
             fixid += 1
@@ -129,23 +135,49 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     t2: Spatial parameter t2.
     minDur: Minimum fixation duration.
     sampling_rate: Sampling rate.
+
     Returns:
     Binary vector indicating fixations (1) and non-fixations (0).
     """
     # Combine position and time into a single data matrix
     data = np.column_stack((pos, time))
-    # Call fixation_detection function to detect fixations
-    fix_ranges = fixation_detection(data, t1, t2, minDur)
-    # Initialize fixation vector
-    fixation_vector = np.zeros(len(time))
-    # Mark fixations in the fixation vector
-    for range in fix_ranges:
-        fixation_vector[range[0]:range[1] + 1] = 1
-    return fixation_vector
+    # Calculate sampling rate if not provided
+    if sampling_rate is None:
+        sampling_rate = 1 / (time[1,:] - time[0,:])
+    # Set default values
+    if minDur is None:
+        minDur = 0.01
+    if t2 is None:
+        t2 = 15
+    if t1 is None:
+        t1 = 30
+    # Add NaN padding based on sampling rate
+    dt = 1 / sampling_rate
+    # Initialize fix_vector
+    fix_vector = np.zeros(data.shape[0])
+    # Find segments based on NaN or time interval
+    diff_time = np.diff(time, axis=0)
+    start_idc = np.where(diff_time > dt)[0]  # Find indices where time interval is greater than dt
+    # Include the first data point index
+    if start_idc[0] != 0:
+        start_idc = np.insert(start_idc, 0, 0)
+    # Loop through segments
+    for i_segment in range(len(start_idc)):
+        start_idx = start_idc[i_segment]
+        end_idx = start_idc[i_segment + 1] - 1 if i_segment + 1 < len(start_idc) else -1
+        # Extract segment data
+        segment_data = data[start_idx:end_idx + 1, :]
+        # Skip if segment data is empty
+        if not segment_data.any():
+            continue
+        # Call fixation_detection function on segment data
+        t_ind = fixation_detection(segment_data, t1, t2, minDur)
+        # Mark fixations in fix_vector
+        for t_range in t_ind:
+            fix_vector[t_range[0]:t_range[1] + 1] = 1
+    return fix_vector
 
 
 
-# Example usage:
-# data = np.loadtxt("data.txt")
-# fixation_list = fixation_detection(data, 0.250, 0.100, 150, 1.25, 1.00)
-# print(fixation_list)
+
+
