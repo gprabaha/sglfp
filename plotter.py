@@ -193,53 +193,95 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     - None
     """
     time_files, pos_files, pupil_files, rect_files = file_tuple
+    
+    rep_file_path = pos_files[0]
+    session = util.extract_session_date(rep_file_path)  # Extract session date
+    
     gaze_events_in_session = \
         proc_behav.get_pos_time_pupil_fix_and_rois_within_session(
             file_tuple, stretch_factor, sampling_rate)
+    
     # Extract cleaned data and metadata
     m1_pos_in_session, m1_time_in_session, m1_pupil_in_session, m1_fix_in_session, rects_m1, m1_rois, \
     m2_pos_in_session, m2_time_in_session, m2_pupil_in_session, m2_fix_in_session, rects_m2, m2_rois = gaze_events_in_session
+    
     bins = n_bins
     
-    ## Use the function below to make a new function called:
-        # proc_behav.calculate_fix_avg_pupil_size
-    
-    # Calculate gaze density and average pupil size for M1
+    # Calculate gaze density and average pupil size for M1 and M2
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m1_pos_in_session[:,0], m1_pos_in_session[:,1], m1_pupil_in_session, bins)
-    # Calculate gaze density and average pupil size for M2
+            m1_pos_in_session[:,0], m1_pos_in_session[:,1],
+            m1_pupil_in_session, bins)
     heatmap_m2, avg_pupil_m2, xedges_m2, yedges_m2 = \
         proc_behav.calculate_gaze_avg_pupil_size(
-            m2_pos_in_session[:,0], m2_pos_in_session[:,1], m2_pupil_in_session, bins)
-        
-    fix_heatmap_m1, fix_pupil_m1, fix_xedges_m1, fix_yedges_m1
+            m2_pos_in_session[:,0], m2_pos_in_session[:,1],
+            m2_pupil_in_session, bins)
     
-    # Plot subplots
-    fig, axs = plt.subplots(2, 2, figsize=(12, 8))
+    # Calculate fixation density for M1 and M2
+    fix_heatmap_m1, fix_pupil_m1, fix_xedges_m1, fix_yedges_m1 = \
+        proc_behav.calculate_gaze_avg_pupil_size(
+            m1_pos_in_session[m1_fix_in_session,0],
+            m1_pos_in_session[m1_fix_in_session,1],
+            m1_pupil_in_session[m1_fix_in_session],
+            bins)
+    fix_heatmap_m2, fix_pupil_m2, fix_xedges_m2, fix_yedges_m2 = \
+        proc_behav.calculate_gaze_avg_pupil_size(
+            m2_pos_in_session[m2_fix_in_session,0],
+            m2_pos_in_session[m2_fix_in_session,1],
+            m2_pupil_in_session[m2_fix_in_session],
+            bins)
+
+    # Plot gaze density and normalized pupil size
+    fig1, axs1 = plt.subplots(2, 2, figsize=(12, 8))
     # Plot M1 gaze density
-    plot_gaze_density(axs[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
-    plot_roi_rects(axs[0, 0], rects_m1, m1_rois, make_legend=True)
+    plot_gaze_density(axs1[0, 0], heatmap_m1, xedges_m1, yedges_m1, 'm1 Gaze Density')
+    plot_roi_rects(axs1[0, 0], rects_m1, m1_rois, make_legend=True)
     # Plot M2 gaze density
-    plot_gaze_density(axs[0, 1], heatmap_m2, xedges_m2, yedges_m2, 'm2 Gaze Density')
-    plot_roi_rects(axs[0, 1], rects_m2, m2_rois)
+    plot_gaze_density(axs1[0, 1], heatmap_m2, xedges_m2, yedges_m2, 'm2 Gaze Density')
+    plot_roi_rects(axs1[0, 1], rects_m2, m2_rois)
     # Plot M1 average pupil size
-    plot_average_pupil(axs[1, 0], avg_pupil_m1, xedges_m1, yedges_m1, 'm1 Average Pupil Size')
-    plot_roi_rects(axs[1, 0], rects_m1, m1_rois)
+    plot_average_pupil(axs1[1, 0], avg_pupil_m1, xedges_m1, yedges_m1, 'm1 Average Pupil Size')
+    plot_roi_rects(axs1[1, 0], rects_m1, m1_rois)
     # Plot M2 average pupil size
-    plot_average_pupil(axs[1, 1], avg_pupil_m2, xedges_m2, yedges_m2, 'm2 Average Pupil Size')
-    plot_roi_rects(axs[1, 1], rects_m2, m2_rois)
+    plot_average_pupil(axs1[1, 1], avg_pupil_m2, xedges_m2, yedges_m2, 'm2 Average Pupil Size')
+    plot_roi_rects(axs1[1, 1], rects_m2, m2_rois)
     # Set super-title
-    super_title = f"Density for Entire Session: {session.strftime('%Y-%m-%d')}"
-    fig.suptitle(super_title, fontsize=14)
+    super_title = f"Gaze Density for Entire Session: {session.strftime('%Y-%m-%d')}"
+    fig1.suptitle(super_title, fontsize=14)
     # Save plot
-    plot_name = os.path.basename(pos_file).replace('.mat', '.png')
     session_folder = session.strftime('%Y-%m-%d')
-    save_dir = os.path.join(plot_root, plot_dir_name, session_folder)
-    if not os.path.exists(save_dir):
-        os.makedirs(save_dir)
-    plt.savefig(os.path.join(save_dir, plot_name))
-    plt.close(fig)  # Close the figure to release memory
+    plot_name1 = f"gaze_dens_{session_folder}.png"
+    save_dir1 = os.path.join(plot_root, plot_dir_name, session_folder)
+    if not os.path.exists(save_dir1):
+        os.makedirs(save_dir1)
+    plt.savefig(os.path.join(save_dir1, plot_name1))
+    plt.close(fig1)  # Close the figure to release memory
+    
+    # Plot fixation density
+    fig2, axs2 = plt.subplots(2, 2, figsize=(12, 8))
+    # Plot M1 fixation density
+    plot_gaze_density(axs2[0, 0], fix_heatmap_m1, fix_xedges_m1, fix_yedges_m1, 'm1 Fixation Density')
+    plot_roi_rects(axs2[0, 0], rects_m1, m1_rois, make_legend=True)
+    # Plot M2 fixation density
+    plot_gaze_density(axs2[0, 1], fix_heatmap_m2, fix_xedges_m2, fix_yedges_m2, 'm2 Fixation Density')
+    plot_roi_rects(axs2[0, 1], rects_m2, m2_rois)
+    # Plot M1 average pupil size
+    plot_average_pupil(axs2[1, 0], fix_pupil_m1, fix_xedges_m1, fix_yedges_m1, 'm1 Average Pupil Size')
+    plot_roi_rects(axs2[1, 0], rects_m1, m1_rois)
+    # Plot M2 average pupil size
+    plot_average_pupil(axs2[1, 1], fix_pupil_m2, fix_xedges_m2, fix_yedges_m2, 'm2 Average Pupil Size')
+    plot_roi_rects(axs2[1, 1], rects_m2, m2_rois)
+    # Set super-title
+    super_title = f"Fixation Density for Entire Session: {session.strftime('%Y-%m-%d')}"
+    fig2.suptitle(super_title, fontsize=14)
+    # Save plot
+    plot_name2 = f"fixations_{session_folder}.png"
+    save_dir2 = os.path.join(plot_root, plot_dir_name, session_folder)
+    if not os.path.exists(save_dir2):
+        os.makedirs(save_dir2)
+    plt.savefig(os.path.join(save_dir2, plot_name2))
+    plt.close(fig2)  # Close the figure to release memory
+
 
 
 

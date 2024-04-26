@@ -9,8 +9,6 @@ Created on Fri Apr 26 10:50:18 2024
 import numpy as np
 
 
-import numpy as np
-
 def distance2p(x1, y1, x2, y2):
     """
     Calculate the distance between two points.
@@ -39,7 +37,7 @@ def fixations_t2(fixations, fixation_id, t2):
     fixations_id = fixations[fixations[:, 3] == fixation_id]
     number_t1 = len(fixations_id)
     # Clustering according to criterion t2
-    fixx, fixy = np.mean(fixations_id[:, :2], axis=0)
+    fixx, fixy = np.nanmean(fixations_id[:, :2], axis=0)
     for i in range(number_t1):
         d = distance2p(fixx, fixy, fixations_id[i, 0], fixations_id[i, 1])
         if d > t2:
@@ -54,7 +52,7 @@ def fixations_t2(fixations, fixation_id, t2):
             list_out_points = np.vstack((list_out_points, fixations_id[i, :]))
     # Compute number of t2 fixations
     number_t2 = fixations_list_t2.shape[0]
-    fixx, fixy = np.mean(fixations_list_t2[:, :2], axis=0)
+    fixx, fixy = np.nanmean(fixations_list_t2[:, :2], axis=0)
     if number_t2 > 0:
         start_time = fixations_list_t2[0, 2]
         end_time = fixations_list_t2[-1, 2]
@@ -96,8 +94,8 @@ def fixation_detection(data, t1, t2, minDur):
     mx, my, d = 0, 0, 0
     fixpointer = 1
     for i in range(n):
-        mx = np.mean(data[fixpointer:i+1, 0])
-        my = np.mean(data[fixpointer:i+1, 1])
+        mx = np.nanmean(data[fixpointer:i+1, 0])
+        my = np.nanmean(data[fixpointer:i+1, 1])
         d = distance2p(mx, my, data[i, 0], data[i, 1])
         if d > t1:
             fixid += 1
@@ -123,6 +121,7 @@ def fixation_detection(data, t1, t2, minDur):
 def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     """
     Determine fixations based on position and time data.
+
     Args:
     pos: Position data (x, y).
     time: Time data.
@@ -143,6 +142,7 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     for range in fix_ranges:
         fixation_vector[range[0]:range[1] + 1] = 1
     return fixation_vector
+
 
 
 # Example usage:
