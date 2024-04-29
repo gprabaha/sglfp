@@ -90,7 +90,7 @@ def fixation_detection(data, t1, t2, minDur):
     n = len(data)
     if n == 0:
         return []  # Return empty list if data is empty
-    fixations = np.zeros((n, 4))  # Initialize fixations array
+    fixations = np.column_stack((data, np.zeros((n, 1))))  # Initialize fixations array
     # Spatial clustering
     fixid = 1
     mx, my, d = 0, 0, 0
@@ -100,8 +100,12 @@ def fixation_detection(data, t1, t2, minDur):
         # Skip if segment data is empty
         if not segment_data.any():
             continue
-        mx = np.nanmean(segment_data[:, 0])
-        my = np.nanmean(segment_data[:, 1])
+        if segment_data.shape[0] > 1:
+            mx = np.nanmean(segment_data[:, 0])
+            my = np.nanmean(segment_data[:, 1])
+        else:
+            mx = segment_data[:,0]
+            my = segment_data[:,1]
         d = distance2p(mx, my, data[i, 0], data[i, 1])
         if d > t1:
             fixid += 1
@@ -127,7 +131,6 @@ def fixation_detection(data, t1, t2, minDur):
 def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     """
     Determine fixations based on position and time data.
-
     Args:
     pos: Position data (x, y).
     time: Time data.
@@ -135,7 +138,6 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     t2: Spatial parameter t2.
     minDur: Minimum fixation duration.
     sampling_rate: Sampling rate.
-
     Returns:
     Binary vector indicating fixations (1) and non-fixations (0).
     """
@@ -157,7 +159,7 @@ def is_fixation(pos, time, t1=None, t2=None, minDur=None, sampling_rate=None):
     fix_vector = np.zeros(data.shape[0])
     # Find segments based on NaN or time interval
     diff_time = np.diff(time, axis=0)
-    start_idc = np.where(diff_time > dt)[0]  # Find indices where time interval is greater than dt
+    start_idc = np.where(diff_time > 2*dt)[0]  # Find indices where time interval is greater than 2*dt
     # Include the first data point index
     if start_idc[0] != 0:
         start_idc = np.insert(start_idc, 0, 0)

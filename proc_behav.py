@@ -246,7 +246,7 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
         m1_roi_rects, m1_rois, stretch_factor)
     # Get frame for M2 using M1 scaling
     m2_frame = util.get_frame_for_m2(m2_roi_rects, m2_rois, m1_scale, stretch_factor)
-    
+    # Filter M1 position data within M1 frame
     m1_data_within_frame = util.filter_data_within_frame(
         (m1_pos_in_session, time_in_session, m1_pupil_in_session, m1_fix_in_session),
         m1_frame)
@@ -254,11 +254,8 @@ def get_pos_time_pupil_fix_and_rois_within_session(file_tuple, stretch_factor, s
     m2_data_within_frame = util.filter_data_within_frame(
         (m2_pos_in_session, time_in_session, m2_pupil_in_session, m2_fix_in_session),
         m2_frame)
-    
-    # All fixation values are coming to be 0 now. Something needs fixing
-    pdb.set_trace()
     # Return the cropped data and relevant information
-    return m1_data_within_frame, rects_m1, m1_rois, m2_data_within_frame, rects_m2, m2_rois
+    return m1_data_within_frame + (rects_m1, m1_rois, ) +  m2_data_within_frame + (rects_m2, m2_rois, )
 
 
 '''

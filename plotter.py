@@ -198,9 +198,14 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
         proc_behav.get_pos_time_pupil_fix_and_rois_within_session(
             file_tuple, stretch_factor, sampling_rate)
     # Extract cleaned data and metadata
-    m1_pos_in_session, m1_time_in_session, m1_pupil_in_session, m1_fix_in_session, rects_m1, m1_rois, \
-    m2_pos_in_session, m2_time_in_session, m2_pupil_in_session, m2_fix_in_session, rects_m2, m2_rois = gaze_events_in_session
+    m1_pos_in_session, m1_time_in_session, m1_pupil_in_session, \
+        m1_fix_in_session, rects_m1, m1_rois, \
+            m2_pos_in_session, m2_time_in_session, m2_pupil_in_session, \
+                m2_fix_in_session, rects_m2, m2_rois = \
+                    gaze_events_in_session
     bins = n_bins
+    m1_fix_in_session = [bool(x) for x in m1_fix_in_session]
+    m2_fix_in_session = [bool(x) for x in m2_fix_in_session]
     # Calculate gaze density and average pupil size for M1 and M2
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
         proc_behav.calculate_gaze_avg_pupil_size(
@@ -271,6 +276,7 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     if not os.path.exists(save_dir2):
         os.makedirs(save_dir2)
     plt.savefig(os.path.join(save_dir2, plot_name2))
+    pdb.set_trace()
     plt.close(fig2)  # Close the figure to release memory
 
 
