@@ -207,6 +207,7 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     m1_fix_in_session = [bool(x) for x in m1_fix_in_session]
     m2_fix_in_session = [bool(x) for x in m2_fix_in_session]
     # Calculate gaze density and average pupil size for M1 and M2
+    print('Generating heatmaps...')
     heatmap_m1, avg_pupil_m1, xedges_m1, yedges_m1 = \
         proc_behav.calculate_gaze_avg_pupil_size(
             m1_pos_in_session[:,0], m1_pos_in_session[:,1],
@@ -248,7 +249,7 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     # Save plot
     session_folder = session.strftime('%Y-%m-%d')
     plot_name1 = f"gaze_dens_{session_folder}.png"
-    save_dir1 = os.path.join(plot_root, plot_dir_name, session_folder)
+    save_dir1 = os.path.join(plot_root, plot_dir_name)
     if not os.path.exists(save_dir1):
         os.makedirs(save_dir1)
     plt.savefig(os.path.join(save_dir1, plot_name1))
@@ -272,11 +273,10 @@ def plot_gaze_fixation_and_pupil_heatmap_for_session(file_tuple, plot_root,
     fig2.suptitle(super_title, fontsize=14)
     # Save plot
     plot_name2 = f"fixations_{session_folder}.png"
-    save_dir2 = os.path.join(plot_root, plot_dir_name, session_folder)
+    save_dir2 = os.path.join(plot_root, plot_dir_name)
     if not os.path.exists(save_dir2):
         os.makedirs(save_dir2)
     plt.savefig(os.path.join(save_dir2, plot_name2))
-    pdb.set_trace()
     plt.close(fig2)  # Close the figure to release memory
 
 

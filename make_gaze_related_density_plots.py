@@ -39,7 +39,12 @@ def generate_pupil_distrubutions_parallel(ordered_gaze_files, plot_root,
 def generate_fixation_density_plots_for_each_session(session_files, plot_root,
                                                      plot_dir_name, stretch_factor, n_bins, sampling_rate, do_parallel=False):
     if do_parallel:
-        args_list = [(file_tuple, plot_root, plot_dir_name, stretch_factor, n_bins, sampling_rate) for file_tuple in session_files]
+        #pdb.set_trace()
+        args_list = []
+        for file_tuple in session_files:
+            args_list.append((file_tuple, plot_root, plot_dir_name,
+                              stretch_factor, n_bins, sampling_rate))
+        #[(file_tuple, plot_root, plot_dir_name, stretch_factor, n_bins, sampling_rate) for file_tuple in session_files]
         util.run_parallel_without_progressbar(plotter.plot_gaze_fixation_and_pupil_heatmap_for_session, args_list)
     else:
         for file_tuple in session_files:
